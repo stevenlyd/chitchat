@@ -1,0 +1,7 @@
+{
+  "name": "anhao-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ]
+}
