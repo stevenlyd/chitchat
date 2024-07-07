@@ -2,7 +2,7 @@
   "name": "anhao-monorepo",
   "private": true,
   "scripts": {
-    "start": "concurrently \"cd packages/anhao-next && bun run start\" \"cd packages/anhao-elysia && bun run start\""
+    "start": "concurrently \"cd packages/anhao-next && bun run build && bun run start\" \"cd packages/anhao-elysia && bun run start\""
   },
   "devDependencies": {
     "concurrently": "8.2.2"
