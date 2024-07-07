@@ -7,11 +7,11 @@
     "start": "NODE_ENV=production bun run index.ts"
   },
   "dependencies": {
-    "@elysiajs/cors": "^1.0.2",
-    "elysia": "latest"
+    "@elysiajs/cors": "1.0.2",
+    "elysia": "1.0.27"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "1.1.18"
   },
   "module": "index.js"
 }
