@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "start": "concurrently \"cd packages/anhao-next && bun run build && PORT=$PORT bun run start\" \"cd packages/anhao-elysia && bun run start\"",
-    "start-backend": "cd packages/anhao-elysia && bun run start"
+    "start-backend": "cd packages/anhao-elysia && bun run start",
+    "start-frontend": "cd packages/anhao-next && bun run start"
   },
   "devDependencies": {
     "concurrently": "8.2.2"
