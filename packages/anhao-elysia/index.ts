@@ -1,6 +1,6 @@
 import app from "./src/app";
 
-const port = Bun.env.PORT ?? 3001;
+const port = 3001;
 
 const anhaoElysia = app.listen(port, () => {
   if (Bun.env.NODE_ENV === "development") {
