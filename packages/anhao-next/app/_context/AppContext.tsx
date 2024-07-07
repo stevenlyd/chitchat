@@ -71,13 +71,19 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
           .get();
 
         if (userList) {
-          setUsersSet(new Set(userList));
+          setUsersSet(() => {
+            const newSet = new Set(userList);
+            if (username) {
+              newSet.add(username);
+            }
+            return newSet;
+          });
         } else {
           console.warn("User list update failed");
         }
       }
     },
-    [roomCode]
+    [roomCode, username]
   );
 
   const enterChatRoom = useCallback(
