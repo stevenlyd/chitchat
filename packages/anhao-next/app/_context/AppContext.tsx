@@ -17,6 +17,7 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useSearchParams } from "next/navigation";
 import { usePathname } from "next/navigation";
+import { useNotification } from "@/hooks/useNotification";
 
 interface AppContext {
   ws: ReturnType<typeof api.chat.subscribe> | null;
@@ -56,6 +57,7 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
   const [username, setUsername] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const { requestPermission, sendNotification } = useNotification();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -183,6 +185,7 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
         setIsConnecting(false);
         if (pathname === "/") {
           router.push(`/${roomCode}?username=${username}`);
+          requestPermission();
         }
       });
 
@@ -194,6 +197,10 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
               ...(prev.length > 100 ? prev.slice(1) : prev),
               data,
             ]);
+            sendNotification({
+              title: senderUserName,
+              body: message,
+            });
           } else {
             toast(message, { type: "error" });
             console.error(message);
@@ -220,7 +227,17 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
 
       setIsConnected(true);
     }
-  }, [isConnected, leaveChatRoom, pathname, roomCode, router, username, ws]);
+  }, [
+    isConnected,
+    leaveChatRoom,
+    pathname,
+    requestPermission,
+    roomCode,
+    router,
+    sendNotification,
+    username,
+    ws,
+  ]);
 
   useEffect(() => {
     if (!ws && !isConnecting && searchParamUsername && pathParamRoomCode) {
