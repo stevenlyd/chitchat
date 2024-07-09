@@ -1,6 +1,8 @@
 import { useCallback } from "react";
 
-type NotificationConfig = NotificationOptions & { title: string };
+export type NotificationConfig = NotificationOptions & {
+  title: string;
+};
 
 export const useNotification = () => {
   const requestPermission =

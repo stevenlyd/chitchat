@@ -18,6 +18,7 @@ import { toast } from "react-toastify";
 import { useSearchParams } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { useNotification } from "@/hooks/useNotification";
+import { getNotificationConfig } from "@/utils";
 
 interface AppContext {
   ws: ReturnType<typeof api.chat.subscribe> | null;
@@ -197,10 +198,10 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
               ...(prev.length > 100 ? prev.slice(1) : prev),
               data,
             ]);
-            sendNotification({
-              title: senderUserName,
-              body: message,
-            });
+            const notificationConfig = getNotificationConfig(data);
+            if (notificationConfig) {
+              sendNotification(notificationConfig);
+            }
           } else {
             toast(message, { type: "error" });
             console.error(message);
