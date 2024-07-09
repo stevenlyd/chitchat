@@ -6,13 +6,12 @@ import {
   useCallback,
   useContext,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import { AppContext } from "./_context/AppContext";
 
 export default function Home() {
-  const { enterChatRoom, roomCode: storedRoomCode } = useContext(AppContext);
+  const { roomCode: storedRoomCode, enterChatRoom } = useContext(AppContext);
   const [roomCode, setRooCode] = useState<string | null>(storedRoomCode);
   const [username, setUsername] = useState<string | null>(null);
 
@@ -20,7 +19,7 @@ export default function Home() {
     if (roomCode && username) {
       enterChatRoom(roomCode, username);
     }
-  }, [roomCode, enterChatRoom, username]);
+  }, [enterChatRoom, roomCode, username]);
 
   const shouldAutoFocusNameInput = useMemo(() => {
     return !username && !storedRoomCode;

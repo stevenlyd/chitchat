@@ -10,12 +10,10 @@ import {
   useState,
 } from "react";
 import { WSMessage } from "../_types";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { usePathname } from "next/navigation";
-import { useParams } from "next/navigation";
 import { useSearchParams } from "next/navigation";
-import { throttle } from "lodash";
+import { usePathname } from "next/navigation";
 
 interface AppContext {
   ws: ReturnType<typeof api.chat.subscribe> | null;
@@ -26,7 +24,8 @@ interface AppContext {
   roomCode: string | null;
   enterChatRoom: (roomCode: string, username: string) => void;
   leaveChatRoom: () => void;
-  updateUserList: () => void;
+  updateUserList: (_roomCode: string, _username: string) => void;
+  isConnecting: boolean;
 }
 
 export const AppContext = createContext<AppContext>({
@@ -38,7 +37,8 @@ export const AppContext = createContext<AppContext>({
   sendMessage: () => {},
   enterChatRoom: () => {},
   leaveChatRoom: () => {},
-  updateUserList: () => {},
+  updateUserList: (_roomCode: string, _username: string) => {},
+  isConnecting: false,
 });
 
 export const AppContextProvider: FC<{ children: ReactNode }> = ({
@@ -51,20 +51,47 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
   const [roomCode, setRoomCode] = useState<string | null>(null);
   const [usersSet, setUsersSet] = useState<Set<string>>(new Set<string>([]));
   const [username, setUsername] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
   const router = useRouter();
-  const { roomCode: roomCodeParam } = useParams();
-  const searchParams = useSearchParams();
   const pathname = usePathname();
 
-  const users = useMemo(() => Array.from(usersSet), [usersSet]);
-
+  const { roomCode: roomCodeParam } = useParams();
+  const searchParams = useSearchParams();
   const searchParamUsername = useMemo(
     () => searchParams.get("username"),
     [searchParams]
   );
+  const pathParamRoomCode = useMemo(() => {
+    if (typeof roomCodeParam === "string") {
+      return decodeURIComponent(roomCodeParam);
+    } else if (Array.isArray(roomCodeParam) && roomCodeParam.length > 0) {
+      return decodeURIComponent(roomCodeParam[0]);
+    }
+    return null;
+  }, [roomCodeParam]);
+
+  const users = useMemo(() => Array.from(usersSet), [usersSet]);
+
+  const throttle = useCallback(
+    <T extends (...args: any[]) => void>(
+      fn: T,
+      limit: number
+    ): ((...args: Parameters<T>) => void) => {
+      let inThrottle: boolean;
+      return (...args: Parameters<T>) => {
+        if (!inThrottle) {
+          console.log("throttle called");
+          fn(...args);
+          inThrottle = true;
+          setTimeout(() => (inThrottle = false), limit);
+        }
+      };
+    },
+    []
+  );
 
   const updateUserList = useCallback(
-    async (_roomCode = roomCode) => {
+    async (_roomCode: string, _username: string) => {
       if (_roomCode) {
         const { data: userList } = await api
           .chat({ roomCode: _roomCode })
@@ -73,8 +100,8 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
         if (userList) {
           setUsersSet(() => {
             const newSet = new Set(userList);
-            if (username) {
-              newSet.add(username);
+            if (_username) {
+              newSet.add(_username);
             }
             return newSet;
           });
@@ -83,25 +110,29 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
         }
       }
     },
-    [roomCode, username]
+    []
   );
 
   const enterChatRoom = useCallback(
-    throttle((_roomCode: string, username: string) => {
-      if (_roomCode !== roomCode) {
-        const wsInstance = api.chat.subscribe({
-          query: {
-            roomCode: _roomCode,
-            username,
-          },
-        });
-        setUsername(username);
-        setRoomCode(_roomCode);
-        setWs(wsInstance);
-        updateUserList(_roomCode);
-      }
-    }, 1000),
-    [roomCode, updateUserList]
+    (_roomCode: string, _username: string) => {
+      setIsConnecting(true);
+      const wsInstance = api.chat.subscribe({
+        query: {
+          roomCode: _roomCode,
+          username: _username,
+        },
+      });
+      setUsername(_username);
+      setRoomCode(_roomCode);
+      setWs(wsInstance);
+      updateUserList(_roomCode, _username);
+    },
+    [updateUserList]
+  );
+
+  const throttledEnterChatRoom = useMemo(
+    () => throttle(enterChatRoom, 1000),
+    [throttle, enterChatRoom]
   );
 
   const sendMessage = useCallback(
@@ -130,18 +161,25 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
   const leaveChatRoom = useCallback(() => {
     if (ws) {
       ws.close();
-      router.push("/");
-      setWs(null);
-      setUsername(null);
-      setMessages([]);
-      setUsersSet(new Set());
     } else {
       console.error("You are not in a chat room!");
     }
+    router.push("/");
+    setWs(null);
+    setUsername(null);
+    setMessages([]);
+    setUsersSet(new Set());
+    setRoomCode(null);
   }, [router, ws]);
 
   useEffect(() => {
     if (ws) {
+      ws.on("open", () => {
+        setIsConnecting(false);
+        if (pathname === "/") {
+          router.push(`/${roomCode}?username=${username}`);
+        }
+      });
       ws.subscribe(({ data }) => {
         const { type, username: senderUserName, message } = data;
         if (username !== senderUserName) {
@@ -173,45 +211,22 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
         leaveChatRoom();
       });
     }
-  }, [leaveChatRoom, username, ws]);
+  }, [leaveChatRoom, pathname, roomCode, router, username, ws]);
 
   useEffect(() => {
-    if (pathname === "/" && ws && username && roomCode) {
-      router.push(`/${roomCode}?username=${username}`);
-    } else if (
-      !ws &&
-      pathname !== "/" &&
-      searchParamUsername &&
-      roomCodeParam &&
-      typeof roomCodeParam === "string"
-    ) {
-      enterChatRoom(
-        decodeURIComponent(roomCodeParam),
+    if (!ws && !isConnecting && searchParamUsername && pathParamRoomCode) {
+      throttledEnterChatRoom(
+        decodeURIComponent(pathParamRoomCode),
         decodeURIComponent(searchParamUsername)
       );
-    } else if (!ws) {
-      leaveChatRoom();
-      router.push("/");
     }
   }, [
-    enterChatRoom,
-    leaveChatRoom,
-    pathname,
-    roomCode,
-    roomCodeParam,
-    router,
+    isConnecting,
+    pathParamRoomCode,
     searchParamUsername,
-    username,
+    throttledEnterChatRoom,
     ws,
   ]);
-
-  useEffect(() => {
-    return () => {
-      if (ws) {
-        ws.close();
-      }
-    };
-  }, []);
 
   return (
     <AppContext.Provider
@@ -222,9 +237,10 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
         username,
         roomCode,
         sendMessage,
-        enterChatRoom,
+        enterChatRoom: throttledEnterChatRoom,
         leaveChatRoom,
         updateUserList,
+        isConnecting,
       }}
     >
       {children}

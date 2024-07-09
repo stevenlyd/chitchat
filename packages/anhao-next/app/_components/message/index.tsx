@@ -1,9 +1,9 @@
-import { WSMessage } from "../_types";
+import { WSMessage } from "../../_types";
 import { ChatActionTypes } from "anhao-elysia/src/modules/chat/types";
 import { FC, useContext, useMemo } from "react";
 import { Chip } from "@nextui-org/react";
 import { DateTime } from "luxon";
-import { AppContext } from "../_context/AppContext";
+import { AppContext } from "../../_context/AppContext";
 
 export const MessageBlock: FC<WSMessage> = ({
   type,

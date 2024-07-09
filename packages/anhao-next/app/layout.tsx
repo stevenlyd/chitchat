@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { Spinner } from "@nextui-org/react";
 
 const inter = Inter({ subsets: ["latin"] });
 

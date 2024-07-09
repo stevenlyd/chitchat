@@ -10,11 +10,12 @@ import {
   useState,
 } from "react";
 import { AppContext } from "../_context/AppContext";
-import { MessageBlock } from "../_components";
+import { MessageBlock } from "../_components/message";
 import { useParams } from "next/navigation";
 
 export default function Page() {
-  const { sendMessage, messages, users, username } = useContext(AppContext);
+  const { sendMessage, messages, users, username, enterChatRoom, ws } =
+    useContext(AppContext);
   const inputRef = useRef<HTMLInputElement>(null);
   const { roomCode: roomCodeParam } = useParams();
 
