@@ -4,3 +4,8 @@ export enum ChatActionTypes {
   LEAVE = "leave",
   ERROR = "error",
 }
+
+export enum ClientMessageTypes {
+  MESSAGE = "message",
+  HEARTBEAT = "heartbeat",
+}

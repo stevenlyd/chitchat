@@ -1,5 +1,8 @@
 import { api } from "@/api";
-import { ChatActionTypes } from "anhao-elysia/src/modules/chat/types";
+import {
+  ChatActionTypes,
+  ClientMessageTypes,
+} from "anhao-elysia/src/modules/chat/types";
 import {
   FC,
   ReactNode,
@@ -52,6 +55,7 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
   const [usersSet, setUsersSet] = useState<Set<string>>(new Set<string>([]));
   const [username, setUsername] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -80,7 +84,6 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
       let inThrottle: boolean;
       return (...args: Parameters<T>) => {
         if (!inThrottle) {
-          console.log("throttle called");
           fn(...args);
           inThrottle = true;
           setTimeout(() => (inThrottle = false), limit);
@@ -139,6 +142,7 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
     (message: string) => {
       if (ws && username) {
         ws.send({
+          type: ClientMessageTypes.MESSAGE,
           message,
           timestamp: new Date(),
         });
@@ -164,22 +168,24 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
     } else {
       console.error("You are not in a chat room!");
     }
-    router.push("/");
+    router.push(roomCode ? `/?roomCode=${roomCode}` : "/");
     setWs(null);
     setUsername(null);
     setMessages([]);
     setUsersSet(new Set());
     setRoomCode(null);
-  }, [router, ws]);
+    setIsConnected(false);
+  }, [roomCode, router, ws]);
 
   useEffect(() => {
-    if (ws) {
+    if (ws && !isConnected) {
       ws.on("open", () => {
         setIsConnecting(false);
         if (pathname === "/") {
           router.push(`/${roomCode}?username=${username}`);
         }
       });
+
       ws.subscribe(({ data }) => {
         const { type, username: senderUserName, message } = data;
         if (username !== senderUserName) {
@@ -207,11 +213,14 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
           }
         }
       });
+
       ws.on("close", () => {
         leaveChatRoom();
       });
+
+      setIsConnected(true);
     }
-  }, [leaveChatRoom, pathname, roomCode, router, username, ws]);
+  }, [isConnected, leaveChatRoom, pathname, roomCode, router, username, ws]);
 
   useEffect(() => {
     if (!ws && !isConnecting && searchParamUsername && pathParamRoomCode) {
@@ -227,6 +236,32 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
     throttledEnterChatRoom,
     ws,
   ]);
+
+  useEffect(() => {
+    if (pathname === "/" && ws && !isConnecting) {
+      if (roomCode && username) {
+        router.push(`/${roomCode}?username=${username}`);
+      } else {
+        leaveChatRoom();
+      }
+    }
+  }, [isConnecting, leaveChatRoom, pathname, roomCode, router, username, ws]);
+
+  useEffect(() => {
+    const heartBeatInterval = setInterval(() => {
+      if (ws) {
+        ws.send({
+          type: ClientMessageTypes.HEARTBEAT,
+          message: "I'm alive",
+          timestamp: new Date(),
+        });
+      }
+    }, 3000);
+
+    return () => {
+      clearInterval(heartBeatInterval);
+    };
+  }, [ws]);
 
   return (
     <AppContext.Provider

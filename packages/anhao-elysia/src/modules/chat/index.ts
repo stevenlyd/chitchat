@@ -1,10 +1,11 @@
 import { Elysia, t } from "elysia";
-import { ChatActionTypes } from "./types";
+import { ChatActionTypes, ClientMessageTypes } from "./types";
 import { SessionManager } from "./utils/sessionManager";
 
 const wsBodySchema = t.Object({
   message: t.Optional(t.String()),
   timestamp: t.Date(),
+  type: t.Enum(ClientMessageTypes),
 });
 
 const wsQuerySchema = t.Object({
@@ -56,15 +57,16 @@ const chatModule = new Elysia()
         ws.close();
       }
     },
-    message: (ws, { message, timestamp }) => {
+    message: (ws, { message, timestamp, type }) => {
       const { roomCode, username } = ws.data.query;
-      if (message) {
+      if (message && type === ClientMessageTypes.MESSAGE) {
         ws.publish(roomCode, {
           type: ChatActionTypes.MESSAGE,
           username,
           message,
           timestamp,
         });
+      } else if (type === ClientMessageTypes.HEARTBEAT) {
       }
     },
     close: (ws) => {

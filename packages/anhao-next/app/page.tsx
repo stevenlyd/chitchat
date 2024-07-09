@@ -8,11 +8,17 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useSearchParams } from "next/navigation";
 import { AppContext } from "./_context/AppContext";
 
 export default function Home() {
-  const { roomCode: storedRoomCode, enterChatRoom } = useContext(AppContext);
-  const [roomCode, setRooCode] = useState<string | null>(storedRoomCode);
+  const searchParams = useSearchParams();
+  const searchParamRoomCode = useMemo(
+    () => searchParams.get("roomCode"),
+    [searchParams]
+  );
+  const { enterChatRoom } = useContext(AppContext);
+  const [roomCode, setRooCode] = useState<string | null>(searchParamRoomCode);
   const [username, setUsername] = useState<string | null>(null);
 
   const handleEnterRoom = useCallback(() => {
@@ -22,8 +28,8 @@ export default function Home() {
   }, [enterChatRoom, roomCode, username]);
 
   const shouldAutoFocusNameInput = useMemo(() => {
-    return !username && !storedRoomCode;
-  }, [storedRoomCode, username]);
+    return !username && !searchParamRoomCode;
+  }, [searchParamRoomCode, username]);
 
   const handleCipherChange = useCallback<ChangeEventHandler<HTMLInputElement>>(
     (e) => {
