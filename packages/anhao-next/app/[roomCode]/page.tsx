@@ -14,7 +14,7 @@ import { MessageBlock } from "../_components/message";
 import { useParams } from "next/navigation";
 
 export default function Page() {
-  const { sendMessage, messages, users, username, enterChatRoom, ws } =
+  const { sendMessage, messages, users, username, toggleNotificationButton } =
     useContext(AppContext);
   const inputRef = useRef<HTMLInputElement>(null);
   const { roomCode: roomCodeParam } = useParams();
@@ -66,7 +66,7 @@ export default function Page() {
     <div className="flex h-full w-full flex-row item-center justify-center gap-5">
       <title>{`${currentRoomCode}: ${username}`}</title>
       <ScrollShadow className="flex flex-col flex-shrink-0 h-full w-200 bg-gray-900 rounded-lg pt-4 px-3 items-center gap-2">
-        <p className="text-2xl font-bold mb-4">在线用户</p>
+        <p className="text-2xl font-bold mb-4 dark:text-white">在线用户</p>
         {users.map((user) => {
           return (
             <Chip className="overflow-ellipsis max-w-xs" key={user}>
@@ -79,9 +79,12 @@ export default function Page() {
         className="flex flex-grow h-full flex-col items-center bg-gray-900 justify-end pt-4 px-4 pb-4 rounded-lg gap-3"
         style={{ maxWidth: "600px" }}
       >
-        <p className="text-2xl font-bold mb-4 text-left w-full">
-          {currentRoomCode}
-        </p>
+        <div className="flex flex-row w-full items-center justify-end">
+          <p className="text-2xl font-bold mb-4 text-left w-full dark:text-white">
+            {currentRoomCode}
+          </p>
+          {toggleNotificationButton}
+        </div>
         <ScrollShadow
           className="flex flex-col h-full w-full items-center gap-2 pr-2"
           ref={messagesEndRef}

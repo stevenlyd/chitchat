@@ -22,8 +22,8 @@ export const MessageBlock: FC<WSMessage> = ({
     if (senderUsername === username) {
       return (
         <div className="flex flex-row w-full items-center justify-end gap-5 p-2">
-          <span className="flex-shrink-0">{time}</span>
-          <p className="gap-2 bg-gray-800 rounded-lg px-2 py-1 break-words overflow-hidden">
+          <span className="dark:text-white flex-shrink-0">{time}</span>
+          <p className="gap-2 dark:bg-gray-800 dark:text-white rounded-lg px-2 py-1 break-words overflow-hidden">
             {message}
           </p>
           <Chip>{senderUsername}</Chip>
@@ -33,10 +33,10 @@ export const MessageBlock: FC<WSMessage> = ({
     return (
       <div className="flex flex-row w-full  items-center justify-start gap-5 p-2">
         <Chip>{senderUsername}</Chip>
-        <p className="gap-2 bg-gray-800 rounded-lg px-2 py-1 break-words overflow-hidden">
+        <p className="gap-2 dark:bg-gray-800 dark:text-white rounded-lg px-2 py-1 break-words overflow-hidden">
           {message}
         </p>
-        <span className="flex-shrink-0">{time}</span>
+        <span className="dark:text-white flex-shrink-0">{time}</span>
       </div>
     );
   }
@@ -46,7 +46,7 @@ export const MessageBlock: FC<WSMessage> = ({
         <Chip>{senderUsername}</Chip>
         <span>{type === ChatActionTypes.JOIN ? "加入了" : "离开了"}聊天室</span>
       </div>
-      <span>{time}</span>
+      <span className="dark:text-white flex-shrink-0">{time}</span>
     </div>
   );
 };

@@ -24,6 +24,7 @@ const sessionManager = new SessionManager();
 
 const chatModule = new Elysia()
   .ws("/chat", {
+    idleTimeout: 60,
     body: wsBodySchema,
     query: wsQuerySchema,
     response: wsResponseSchema,
@@ -66,7 +67,6 @@ const chatModule = new Elysia()
           message,
           timestamp,
         });
-      } else if (type === ClientMessageTypes.HEARTBEAT) {
       }
     },
     close: (ws) => {

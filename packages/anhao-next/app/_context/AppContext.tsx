@@ -31,6 +31,7 @@ interface AppContext {
   leaveChatRoom: () => void;
   updateUserList: (_roomCode: string, _username: string) => void;
   isConnecting: boolean;
+  toggleNotificationButton: JSX.Element | null;
 }
 
 export const AppContext = createContext<AppContext>({
@@ -44,6 +45,7 @@ export const AppContext = createContext<AppContext>({
   leaveChatRoom: () => {},
   updateUserList: (_roomCode: string, _username: string) => {},
   isConnecting: false,
+  toggleNotificationButton: null,
 });
 
 export const AppContextProvider: FC<{ children: ReactNode }> = ({
@@ -58,7 +60,12 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
   const [username, setUsername] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const { requestPermission, sendNotification } = useNotification();
+  const {
+    requestPermission,
+    sendNotification,
+    toggleNotificationButton,
+    isEnabled: isNotificationEnabled,
+  } = useNotification();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -180,14 +187,19 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
     setIsConnected(false);
   }, [roomCode, router, ws]);
 
+  const throttledLeaveChatRoom = useMemo(
+    () => throttle(leaveChatRoom, 1000),
+    [throttle, leaveChatRoom]
+  );
+
   useEffect(() => {
     if (ws && !isConnected) {
       ws.on("open", () => {
         setIsConnecting(false);
         if (pathname === "/") {
           router.push(`/${roomCode}?username=${username}`);
-          requestPermission();
         }
+        requestPermission();
       });
 
       ws.subscribe(({ data }) => {
@@ -223,19 +235,20 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
       });
 
       ws.on("close", () => {
-        leaveChatRoom();
+        throttledLeaveChatRoom();
       });
 
       setIsConnected(true);
     }
   }, [
     isConnected,
-    leaveChatRoom,
+    isNotificationEnabled,
     pathname,
     requestPermission,
     roomCode,
     router,
     sendNotification,
+    throttledLeaveChatRoom,
     username,
     ws,
   ]);
@@ -260,10 +273,18 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
       if (roomCode && username) {
         router.push(`/${roomCode}?username=${username}`);
       } else {
-        leaveChatRoom();
+        throttledLeaveChatRoom();
       }
     }
-  }, [isConnecting, leaveChatRoom, pathname, roomCode, router, username, ws]);
+  }, [
+    isConnecting,
+    throttledLeaveChatRoom,
+    pathname,
+    roomCode,
+    router,
+    username,
+    ws,
+  ]);
 
   useEffect(() => {
     const heartBeatInterval = setInterval(() => {
@@ -291,9 +312,10 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
         roomCode,
         sendMessage,
         enterChatRoom: throttledEnterChatRoom,
-        leaveChatRoom,
+        leaveChatRoom: throttledLeaveChatRoom,
         updateUserList,
         isConnecting,
+        toggleNotificationButton,
       }}
     >
       {children}
