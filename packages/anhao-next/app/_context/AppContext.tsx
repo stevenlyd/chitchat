@@ -19,6 +19,10 @@ import { useSearchParams } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { useNotification } from "@/hooks/useNotification";
 import { getNotificationConfig } from "@/utils";
+import eventBus, {
+  ApplicationEventTypes,
+  subscribeEvents,
+} from "../_services/eventBus";
 
 interface AppContext {
   ws: ReturnType<typeof api.chat.subscribe> | null;
@@ -60,12 +64,8 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
   const [username, setUsername] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const {
-    requestPermission,
-    sendNotification,
-    toggleNotificationButton,
-    isEnabled: isNotificationEnabled,
-  } = useNotification();
+  const { requestPermission, sendNotification, toggleNotificationButton } =
+    useNotification();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -195,63 +195,19 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
   useEffect(() => {
     if (ws && !isConnected) {
       ws.on("open", () => {
-        setIsConnecting(false);
-        if (pathname === "/") {
-          router.push(`/${roomCode}?username=${username}`);
-        }
-        requestPermission();
+        eventBus.emit(ApplicationEventTypes.WS_CONNECT);
       });
 
       ws.subscribe(({ data }) => {
-        const { type, username: senderUserName, message } = data;
-        if (username !== senderUserName) {
-          if (type !== ChatActionTypes.ERROR) {
-            setMessages((prev) => [
-              ...(prev.length > 100 ? prev.slice(1) : prev),
-              data,
-            ]);
-            const notificationConfig = getNotificationConfig(data);
-            if (notificationConfig) {
-              sendNotification(notificationConfig);
-            }
-          } else {
-            toast(message, { type: "error" });
-            console.error(message);
-          }
-          if (type === ChatActionTypes.JOIN) {
-            setUsersSet((prev) => {
-              const newSet = new Set(prev);
-              newSet.add(senderUserName);
-              return newSet;
-            });
-          } else if (type === ChatActionTypes.LEAVE) {
-            setUsersSet((prev) => {
-              const newSet = new Set(prev);
-              newSet.delete(senderUserName);
-              return newSet;
-            });
-          }
-        }
+        eventBus.emit(ApplicationEventTypes.WS_MESSAGE, data);
       });
 
       ws.on("close", () => {
-        throttledLeaveChatRoom();
+        eventBus.emit(ApplicationEventTypes.WS_DISCONNECT);
       });
-
       setIsConnected(true);
     }
-  }, [
-    isConnected,
-    isNotificationEnabled,
-    pathname,
-    requestPermission,
-    roomCode,
-    router,
-    sendNotification,
-    throttledLeaveChatRoom,
-    username,
-    ws,
-  ]);
+  }, [isConnected, ws]);
 
   useEffect(() => {
     if (!ws && !isConnecting && searchParamUsername && pathParamRoomCode) {
@@ -302,23 +258,107 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
     };
   }, [ws]);
 
+  useEffect(() => {
+    const handleWSMessage = (data: WSMessage) => {
+      const { type, username: senderUserName, message } = data;
+      if (username !== senderUserName) {
+        if (type !== ChatActionTypes.ERROR) {
+          setMessages((prev) => [
+            ...(prev.length > 100 ? prev.slice(1) : prev),
+            data,
+          ]);
+          const notificationConfig = getNotificationConfig(data);
+          if (notificationConfig) {
+            sendNotification(notificationConfig);
+          }
+        } else {
+          toast(message, { type: "error" });
+          console.error(message);
+        }
+        if (type === ChatActionTypes.JOIN) {
+          setUsersSet((prev) => {
+            const newSet = new Set(prev);
+            newSet.add(senderUserName);
+            return newSet;
+          });
+        } else if (type === ChatActionTypes.LEAVE) {
+          setUsersSet((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(senderUserName);
+            return newSet;
+          });
+        }
+      }
+    };
+
+    const handleWSConnect = () => {
+      setIsConnecting(false);
+      if (pathname === "/") {
+        router.push(`/${roomCode}?username=${username}`);
+      }
+      requestPermission();
+    };
+
+    const handleWSDisconnect = () => {
+      throttledLeaveChatRoom();
+    };
+
+    const unsubscriber = subscribeEvents([
+      {
+        event: ApplicationEventTypes.WS_MESSAGE,
+        listener: handleWSMessage,
+      },
+      {
+        event: ApplicationEventTypes.WS_CONNECT,
+        listener: handleWSConnect,
+      },
+      {
+        event: ApplicationEventTypes.WS_DISCONNECT,
+        listener: handleWSDisconnect,
+      },
+    ]);
+
+    return unsubscriber;
+  }, [
+    pathname,
+    requestPermission,
+    roomCode,
+    router,
+    sendNotification,
+    throttledLeaveChatRoom,
+    username,
+  ]);
+
+  const contextValue = useMemo(
+    () => ({
+      ws,
+      messages,
+      users,
+      username,
+      roomCode,
+      sendMessage,
+      enterChatRoom: throttledEnterChatRoom,
+      leaveChatRoom: throttledLeaveChatRoom,
+      updateUserList,
+      isConnecting,
+      toggleNotificationButton,
+    }),
+    [
+      ws,
+      messages,
+      users,
+      username,
+      roomCode,
+      sendMessage,
+      throttledEnterChatRoom,
+      throttledLeaveChatRoom,
+      updateUserList,
+      isConnecting,
+      toggleNotificationButton,
+    ]
+  );
+
   return (
-    <AppContext.Provider
-      value={{
-        ws,
-        messages,
-        users,
-        username,
-        roomCode,
-        sendMessage,
-        enterChatRoom: throttledEnterChatRoom,
-        leaveChatRoom: throttledLeaveChatRoom,
-        updateUserList,
-        isConnecting,
-        toggleNotificationButton,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
+    <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>
   );
 };

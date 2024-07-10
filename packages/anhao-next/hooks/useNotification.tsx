@@ -36,15 +36,12 @@ export const useNotification = () => {
 
   const sendNotification = useCallback(
     async (options: NotificationConfig) => {
-      console.log("sendNotification", isEnabled);
-      if (isEnabled) {
+      if (isEnabled && document.visibilityState === "hidden") {
         const permission = await requestPermission();
         setIsEnabled(permission === "granted");
 
-        console.log("tring to send notification", permission);
         if (permission === "granted") {
           const { title, ...notificationOptions } = options;
-          console.log("sending notification");
           new Notification(title, notificationOptions);
         }
       }
