@@ -27,8 +27,13 @@ export const useNotification = () => {
 
   const toggleNotificationButton = useMemo(
     () => (
-      <Switch size="sm" isSelected={isEnabled} onValueChange={setIsEnabled}>
-        Notification
+      <Switch
+        size="sm"
+        isSelected={isEnabled}
+        onValueChange={setIsEnabled}
+        className="flex-shrink-0"
+      >
+        通知
       </Switch>
     ),
     [isEnabled]
