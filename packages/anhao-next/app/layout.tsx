@@ -16,9 +16,7 @@ export default function RootLayout({
     <html lang="en" className="dark text-foreground bg-background">
       <body>
         <Providers>
-          <main className="p-6 md:p-24 h-screen w-screen box-border">
-            {children}
-          </main>
+          <main className="h-screen w-screen">{children}</main>
         </Providers>
       </body>
     </html>

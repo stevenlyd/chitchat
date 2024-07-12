@@ -19,7 +19,7 @@ export default function MobileUI(props: MobileUIProps) {
   } = props;
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col pt-6 pb-20 px-5">
       <Tabs
         fullWidth
         size="lg"

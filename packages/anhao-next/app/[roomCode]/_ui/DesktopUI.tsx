@@ -31,7 +31,7 @@ export default function DesktopUI(props: DesktopUIProps) {
   } = props;
 
   return (
-    <div className="flex h-full w-full flex-row item-center justify-center gap-5">
+    <div className="flex h-full w-full py-20 flex-row item-center justify-center gap-5">
       <title>{`${currentRoomCode}: ${username}`}</title>
       <ScrollShadow className="flex flex-col flex-shrink-0 h-full w-200 bg-gray-900 rounded-lg pt-4 px-3 items-center gap-2">
         <p className="text-2xl font-bold mb-4 dark:text-white">在线用户</p>
