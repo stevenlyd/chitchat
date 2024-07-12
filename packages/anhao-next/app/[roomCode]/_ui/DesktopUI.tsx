@@ -3,7 +3,7 @@ import { WSMessage } from "@/app/_types";
 import { Button, Chip, Input, ScrollShadow } from "@nextui-org/react";
 import { ChangeEventHandler, RefObject } from "react";
 
-interface DesktopUIProps {
+export interface DesktopUIProps {
   handleMessageChange: ChangeEventHandler<HTMLInputElement>;
   handleSendMessage: () => void;
   inputRef: RefObject<HTMLInputElement>;

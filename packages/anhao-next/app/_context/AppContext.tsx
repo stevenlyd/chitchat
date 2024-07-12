@@ -23,7 +23,10 @@ import eventBus, {
   ApplicationEventTypes,
   subscribeEvents,
 } from "../_services/eventBus";
-import NotificationButton from "../_components/message/NotificationButton";
+import NotificationButton, {
+  NotificationButtonProps,
+} from "../_components/message/NotificationButton";
+import useIsMobile from "@/hooks/useIsMobile";
 
 interface AppContext {
   ws: ReturnType<typeof api.chat.subscribe> | null;
@@ -36,7 +39,10 @@ interface AppContext {
   leaveChatRoom: () => void;
   updateUserList: (_roomCode: string, _username: string) => void;
   isConnecting: boolean;
-  toggleNotificationButton: JSX.Element;
+  getToggleNotificationButton: (
+    size?: NotificationButtonProps["size"]
+  ) => JSX.Element;
+  isMobile: boolean | null;
 }
 
 export const AppContext = createContext<AppContext>({
@@ -50,9 +56,10 @@ export const AppContext = createContext<AppContext>({
   leaveChatRoom: () => {},
   updateUserList: (_roomCode: string, _username: string) => {},
   isConnecting: false,
-  toggleNotificationButton: (
-    <NotificationButton isEnabled={true} setIsEnabled={() => {}} />
+  getToggleNotificationButton: (size?: NotificationButtonProps["size"]) => (
+    <NotificationButton size={size} isEnabled={true} setIsEnabled={() => {}} />
   ),
+  isMobile: null,
 });
 
 export const AppContextProvider: FC<{ children: ReactNode }> = ({
@@ -67,8 +74,9 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
   const [username, setUsername] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const { requestPermission, sendNotification, toggleNotificationButton } =
+  const { requestPermission, sendNotification, getToggleNotificationButton } =
     useNotification();
+  const isMobile = useIsMobile();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -344,7 +352,8 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
       leaveChatRoom: throttledLeaveChatRoom,
       updateUserList,
       isConnecting,
-      toggleNotificationButton,
+      getToggleNotificationButton,
+      isMobile,
     }),
     [
       ws,
@@ -357,7 +366,8 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
       throttledLeaveChatRoom,
       updateUserList,
       isConnecting,
-      toggleNotificationButton,
+      getToggleNotificationButton,
+      isMobile,
     ]
   );
 

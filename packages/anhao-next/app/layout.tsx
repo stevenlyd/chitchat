@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-import { Spinner } from "@nextui-org/react";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "暗号",
@@ -20,7 +16,9 @@ export default function RootLayout({
     <html lang="en" className="dark text-foreground bg-background">
       <body>
         <Providers>
-          <main className="p-24 h-screen w-screen">{children}</main>
+          <main className="p-6 md:p-24 h-screen w-screen box-border">
+            {children}
+          </main>
         </Providers>
       </body>
     </html>

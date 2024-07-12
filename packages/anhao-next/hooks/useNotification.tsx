@@ -1,4 +1,6 @@
-import NotificationButton from "@/app/_components/message/NotificationButton";
+import NotificationButton, {
+  NotificationButtonProps,
+} from "@/app/_components/message/NotificationButton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export type NotificationConfig = NotificationOptions & {
@@ -25,9 +27,13 @@ export const useNotification = () => {
       return Notification.permission;
     }, []);
 
-  const toggleNotificationButton = useMemo(
-    () => (
-      <NotificationButton isEnabled={isEnabled} setIsEnabled={setIsEnabled} />
+  const getToggleNotificationButton = useCallback(
+    (size?: NotificationButtonProps["size"]) => (
+      <NotificationButton
+        size={size}
+        isEnabled={isEnabled}
+        setIsEnabled={setIsEnabled}
+      />
     ),
     [isEnabled]
   );
@@ -56,7 +62,7 @@ export const useNotification = () => {
   return {
     requestPermission,
     sendNotification,
-    toggleNotificationButton,
+    getToggleNotificationButton,
     isEnabled,
   };
 };

@@ -11,10 +11,17 @@ import {
 import { AppContext } from "../_context/AppContext";
 import { useParams } from "next/navigation";
 import DesktopUI from "./_ui/DesktopUI";
+import MobileUI from "./_ui/MobileUI";
 
 export default function Page() {
-  const { sendMessage, messages, users, username, toggleNotificationButton } =
-    useContext(AppContext);
+  const {
+    isMobile,
+    sendMessage,
+    messages,
+    users,
+    username,
+    getToggleNotificationButton,
+  } = useContext(AppContext);
   const inputRef = useRef<HTMLInputElement>(null);
   const { roomCode: roomCodeParam } = useParams();
 
@@ -61,7 +68,20 @@ export default function Page() {
     }
   }, [messages]);
 
-  return (
+  return isMobile ? (
+    <MobileUI
+      handleSendMessage={handleSendMessage}
+      handleMessageChange={handleMessageChange}
+      message={message}
+      messages={messages}
+      inputRef={inputRef}
+      messagesEndRef={messagesEndRef}
+      currentRoomCode={currentRoomCode}
+      users={users}
+      username={username}
+      toggleNotificationButton={getToggleNotificationButton("lg")}
+    />
+  ) : (
     <DesktopUI
       handleSendMessage={handleSendMessage}
       handleMessageChange={handleMessageChange}
@@ -72,7 +92,7 @@ export default function Page() {
       currentRoomCode={currentRoomCode}
       users={users}
       username={username}
-      toggleNotificationButton={toggleNotificationButton}
+      toggleNotificationButton={getToggleNotificationButton()}
     />
   );
 }

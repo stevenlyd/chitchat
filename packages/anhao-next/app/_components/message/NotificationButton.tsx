@@ -1,15 +1,16 @@
 import { Switch } from "@nextui-org/react";
 
-interface NotificationButtonProps {
+export interface NotificationButtonProps {
   isEnabled: boolean;
   setIsEnabled: (isEnabled: boolean) => void;
+  size?: "sm" | "md" | "lg";
 }
 
 export default function NotificationButton(props: NotificationButtonProps) {
-  const { isEnabled, setIsEnabled } = props;
+  const { isEnabled, setIsEnabled, size } = props;
   return (
     <Switch
-      size="sm"
+      size={size ?? "sm"}
       isSelected={isEnabled}
       onValueChange={setIsEnabled}
       className="flex-shrink-0"
