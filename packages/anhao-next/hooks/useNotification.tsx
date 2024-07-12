@@ -1,4 +1,4 @@
-import { Switch } from "@nextui-org/react";
+import NotificationButton from "@/app/_components/message/NotificationButton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export type NotificationConfig = NotificationOptions & {
@@ -27,14 +27,7 @@ export const useNotification = () => {
 
   const toggleNotificationButton = useMemo(
     () => (
-      <Switch
-        size="sm"
-        isSelected={isEnabled}
-        onValueChange={setIsEnabled}
-        className="flex-shrink-0"
-      >
-        通知
-      </Switch>
+      <NotificationButton isEnabled={isEnabled} setIsEnabled={setIsEnabled} />
     ),
     [isEnabled]
   );

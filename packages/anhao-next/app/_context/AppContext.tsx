@@ -23,6 +23,7 @@ import eventBus, {
   ApplicationEventTypes,
   subscribeEvents,
 } from "../_services/eventBus";
+import NotificationButton from "../_components/message/NotificationButton";
 
 interface AppContext {
   ws: ReturnType<typeof api.chat.subscribe> | null;
@@ -35,7 +36,7 @@ interface AppContext {
   leaveChatRoom: () => void;
   updateUserList: (_roomCode: string, _username: string) => void;
   isConnecting: boolean;
-  toggleNotificationButton: JSX.Element | null;
+  toggleNotificationButton: JSX.Element;
 }
 
 export const AppContext = createContext<AppContext>({
@@ -49,7 +50,9 @@ export const AppContext = createContext<AppContext>({
   leaveChatRoom: () => {},
   updateUserList: (_roomCode: string, _username: string) => {},
   isConnecting: false,
-  toggleNotificationButton: null,
+  toggleNotificationButton: (
+    <NotificationButton isEnabled={true} setIsEnabled={() => {}} />
+  ),
 });
 
 export const AppContextProvider: FC<{ children: ReactNode }> = ({
