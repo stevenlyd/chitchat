@@ -1,4 +1,6 @@
-import { Switch } from "@nextui-org/react";
+import NotificationButton, {
+  NotificationButtonProps,
+} from "@/app/_components/message/NotificationButton";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export type NotificationConfig = NotificationOptions & {
@@ -25,16 +27,13 @@ export const useNotification = () => {
       return Notification.permission;
     }, []);
 
-  const toggleNotificationButton = useMemo(
-    () => (
-      <Switch
-        size="sm"
-        isSelected={isEnabled}
-        onValueChange={setIsEnabled}
-        className="flex-shrink-0"
-      >
-        通知
-      </Switch>
+  const getToggleNotificationButton = useCallback(
+    (size?: NotificationButtonProps["size"]) => (
+      <NotificationButton
+        size={size}
+        isEnabled={isEnabled}
+        setIsEnabled={setIsEnabled}
+      />
     ),
     [isEnabled]
   );
@@ -63,7 +62,7 @@ export const useNotification = () => {
   return {
     requestPermission,
     sendNotification,
-    toggleNotificationButton,
+    getToggleNotificationButton,
     isEnabled,
   };
 };

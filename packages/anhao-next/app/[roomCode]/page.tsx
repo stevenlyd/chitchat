@@ -1,5 +1,4 @@
 "use client";
-import { Button, Chip, Input, ScrollShadow } from "@nextui-org/react";
 import {
   ChangeEventHandler,
   useCallback,
@@ -10,12 +9,21 @@ import {
   useState,
 } from "react";
 import { AppContext } from "../_context/AppContext";
-import { MessageBlock } from "../_components/message";
 import { useParams } from "next/navigation";
+import dynamic from "next/dynamic";
+
+const Mobile = dynamic(() => import("./_ui/MobileUI"), { ssr: false });
+const Desktop = dynamic(() => import("./_ui/DesktopUI"), { ssr: false });
 
 export default function Page() {
-  const { sendMessage, messages, users, username, toggleNotificationButton } =
-    useContext(AppContext);
+  const {
+    isMobile,
+    sendMessage,
+    messages,
+    users,
+    username,
+    getToggleNotificationButton,
+  } = useContext(AppContext);
   const inputRef = useRef<HTMLInputElement>(null);
   const { roomCode: roomCodeParam } = useParams();
 
@@ -62,57 +70,31 @@ export default function Page() {
     }
   }, [messages]);
 
-  return (
-    <div className="flex h-full w-full flex-row item-center justify-center gap-5">
-      <title>{`${currentRoomCode}: ${username}`}</title>
-      <ScrollShadow className="flex flex-col flex-shrink-0 h-full w-200 bg-gray-900 rounded-lg pt-4 px-3 items-center gap-2">
-        <p className="text-2xl font-bold mb-4 dark:text-white">在线用户</p>
-        {users.map((user) => {
-          return (
-            <Chip className="overflow-ellipsis max-w-xs" key={user}>
-              {user}
-            </Chip>
-          );
-        })}
-      </ScrollShadow>
-      <div
-        className="flex flex-grow h-full flex-col items-center bg-gray-900 justify-end pt-4 px-4 pb-4 rounded-lg gap-3"
-        style={{ maxWidth: "600px" }}
-      >
-        <div className="flex flex-row w-full items-center justify-end">
-          <p className="text-2xl font-bold mb-4 text-left w-full dark:text-white">
-            {currentRoomCode}
-          </p>
-          {toggleNotificationButton}
-        </div>
-        <ScrollShadow
-          className="flex flex-col h-full w-full items-center gap-2 pr-2"
-          ref={messagesEndRef}
-        >
-          {messages.map((message) => {
-            const { username, timestamp } = message;
-            return (
-              <MessageBlock
-                key={`${username}-${timestamp.getMilliseconds()}`}
-                {...message}
-              />
-            );
-          })}
-        </ScrollShadow>
-        <div className="flex h-200 w-full flex-row justify-between gap-10">
-          <Input
-            value={message}
-            autoFocus
-            style={{ width: "100%" }}
-            placeholder="请输入消息..."
-            onChange={handleMessageChange}
-            ref={inputRef}
-          />
-          <Button disabled={!message} onPress={handleSendMessage}>
-            发送
-          </Button>
-        </div>
-      </div>
-    </div>
+  return isMobile ? (
+    <Mobile
+      handleSendMessage={handleSendMessage}
+      handleMessageChange={handleMessageChange}
+      message={message}
+      messages={messages}
+      inputRef={inputRef}
+      messagesEndRef={messagesEndRef}
+      currentRoomCode={currentRoomCode}
+      users={users}
+      username={username}
+      toggleNotificationButton={getToggleNotificationButton("lg")}
+    />
+  ) : (
+    <Desktop
+      handleSendMessage={handleSendMessage}
+      handleMessageChange={handleMessageChange}
+      message={message}
+      messages={messages}
+      inputRef={inputRef}
+      messagesEndRef={messagesEndRef}
+      currentRoomCode={currentRoomCode}
+      users={users}
+      username={username}
+      toggleNotificationButton={getToggleNotificationButton()}
+    />
   );
 }

@@ -10,6 +10,10 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import { AppContext } from "./_context/AppContext";
+import dynamic from "next/dynamic";
+
+const Mobile = dynamic(() => import("./_ui/MobileLogin"), { ssr: false });
+const Desktop = dynamic(() => import("./_ui/DeskTopLogin"), { ssr: false });
 
 export default function Home() {
   const searchParams = useSearchParams();
@@ -17,7 +21,7 @@ export default function Home() {
     () => searchParams.get("roomCode"),
     [searchParams]
   );
-  const { enterChatRoom } = useContext(AppContext);
+  const { enterChatRoom, isMobile } = useContext(AppContext);
   const [roomCode, setRooCode] = useState<string | null>(searchParamRoomCode);
   const [username, setUsername] = useState<string | null>(null);
 
@@ -56,29 +60,48 @@ export default function Home() {
     [handleEnterRoom]
   );
 
-  return (
-    <div className="flex flex-col items-center justify-end h-full">
-      <h1 className="text-4xl">暗号</h1>
-      <div className="flex flex-row items-center gap-10 h-full">
-        <Input
-          autoFocus={shouldAutoFocusNameInput}
-          value={roomCode ?? ""}
-          className="w-100"
-          placeholder="输入你们的暗号..."
-          onChange={handleCipherChange}
-        />
-        <Input
-          autoFocus={!shouldAutoFocusNameInput}
-          value={username ?? ""}
-          className="w-100"
-          placeholder="输入你的名字..."
-          onKeyDown={handleEnterKeyDown}
-          onChange={handleUsernameChange}
-        />
-        <Button disabled={!(roomCode && username)} onPress={handleEnterRoom}>
-          进入房间
-        </Button>
-      </div>
-    </div>
+  return isMobile ? (
+    <Mobile
+      shouldAutoFocusNameInput={shouldAutoFocusNameInput}
+      handleRoomCodeChange={handleCipherChange}
+      handleEnterKeyDown={handleEnterKeyDown}
+      handleUsernameChange={handleUsernameChange}
+      handleEnterRoom={handleEnterRoom}
+      username={username}
+      roomCode={roomCode}
+    />
+  ) : (
+    <Desktop
+      shouldAutoFocusNameInput={shouldAutoFocusNameInput}
+      handleRoomCodeChange={handleCipherChange}
+      handleEnterKeyDown={handleEnterKeyDown}
+      handleUsernameChange={handleUsernameChange}
+      handleEnterRoom={handleEnterRoom}
+      username={username}
+      roomCode={roomCode}
+    />
   );
+  // <div className="flex flex-col items-center justify-end h-full">
+  //   <h1 className="text-4xl">暗号</h1>
+  //   <div className="flex flex-row items-center gap-10 h-full">
+  //     <Input
+  //       autoFocus={shouldAutoFocusNameInput}
+  //       value={roomCode ?? ""}
+  //       className="w-100"
+  //       placeholder="输入你们的暗号..."
+  //       onChange={handleCipherChange}
+  //     />
+  //     <Input
+  //       autoFocus={!shouldAutoFocusNameInput}
+  //       value={username ?? ""}
+  //       className="w-100"
+  //       placeholder="输入你的名字..."
+  //       onKeyDown={handleEnterKeyDown}
+  //       onChange={handleUsernameChange}
+  //     />
+  //     <Button disabled={!(roomCode && username)} onPress={handleEnterRoom}>
+  //       进入房间
+  //     </Button>
+  //   </div>
+  // </div>
 }
