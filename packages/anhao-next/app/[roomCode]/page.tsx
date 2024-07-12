@@ -10,8 +10,10 @@ import {
 } from "react";
 import { AppContext } from "../_context/AppContext";
 import { useParams } from "next/navigation";
-import DesktopUI from "./_ui/DesktopUI";
-import MobileUI from "./_ui/MobileUI";
+import dynamic from "next/dynamic";
+
+const Mobile = dynamic(() => import("./_ui/MobileUI"), { ssr: false });
+const Desktop = dynamic(() => import("./_ui/DesktopUI"), { ssr: false });
 
 export default function Page() {
   const {
@@ -69,7 +71,7 @@ export default function Page() {
   }, [messages]);
 
   return isMobile ? (
-    <MobileUI
+    <Mobile
       handleSendMessage={handleSendMessage}
       handleMessageChange={handleMessageChange}
       message={message}
@@ -82,7 +84,7 @@ export default function Page() {
       toggleNotificationButton={getToggleNotificationButton("lg")}
     />
   ) : (
-    <DesktopUI
+    <Desktop
       handleSendMessage={handleSendMessage}
       handleMessageChange={handleMessageChange}
       message={message}
