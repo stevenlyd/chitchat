@@ -13,7 +13,6 @@ export default function MobileUI(props: MobileUIProps) {
     message,
     messages,
     users,
-    username,
     toggleNotificationButton,
     currentRoomCode,
   } = props;
@@ -62,7 +61,6 @@ export default function MobileUI(props: MobileUIProps) {
           </ScrollShadow>
           <Input
             value={message}
-            autoFocus
             style={{ width: "100%" }}
             placeholder="请输入消息..."
             onChange={handleMessageChange}

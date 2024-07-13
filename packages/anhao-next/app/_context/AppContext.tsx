@@ -340,6 +340,32 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
     username,
   ]);
 
+  useEffect(() => {
+    const resetViewport = () => {
+      const viewport = document.querySelector('meta[name="viewport"]');
+      if (viewport) {
+        viewport.setAttribute(
+          "content",
+          "width=device-width, initial-scale=1.0, user-scalable=no"
+        );
+      }
+    };
+
+    const handleFocusOut = (event: FocusEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+        document.body.scrollIntoView();
+        resetViewport();
+      }
+    };
+
+    document.addEventListener("focusout", handleFocusOut);
+
+    return () => {
+      document.removeEventListener("focusout", handleFocusOut);
+    };
+  }, []);
+
   const contextValue = useMemo(
     () => ({
       ws,
