@@ -5,6 +5,7 @@ import { Providers } from "./providers";
 export const metadata: Metadata = {
   title: "暗号",
   description: "一个简单的聊天室应用",
+  manifest: "/manifest.json",
 };
 
 import { headers } from "next/headers";
