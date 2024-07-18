@@ -1,6 +1,7 @@
 import { Chip, Input, ScrollShadow, Tab, Tabs } from "@nextui-org/react";
 import { DesktopUIProps } from "./DesktopUI";
 import { MessageBlock } from "@/app/_components/message/MessageBlock";
+import { SessionStatus } from "anhao-elysia/src/modules/chat/types/session";
 
 interface MobileUIProps extends DesktopUIProps {}
 
@@ -30,10 +31,17 @@ export default function MobileUI(props: MobileUIProps) {
       >
         <Tab key="users" title="用户" className="flex-grow flex">
           <ScrollShadow className="flex flex-col flex-shrink-0 h-full w-200 bg-gray-900 rounded-lg pt-4 px-3 items-center gap-2">
-            {users.map((user) => {
+            {users.map(({ username, status }) => {
               return (
-                <Chip className="overflow-ellipsis max-w-xs" key={user}>
-                  {user}
+                <Chip
+                  className="overflow-ellipsis max-w-xs"
+                  key={username}
+                  variant="dot"
+                  color={
+                    status === SessionStatus.ONLINE ? "success" : "warning"
+                  }
+                >
+                  {username}
                 </Chip>
               );
             })}

@@ -1,38 +1,38 @@
-import type { ElysiaWS } from "elysia/dist/ws";
-
-export type Session = {
-  username: string;
-  roomCode: string;
-  ws: ElysiaWS<any, any, any>;
-};
+import type { SessionStatus } from "../types/session";
+import { Room } from "./room";
+import { Session } from "./session";
 
 export class SessionManager {
   private idMap = new Map<string, Session>();
-  private roomMap = new Map<string, Set<Session>>();
+  private roomMap = new Map<string, Room>();
 
-  private getUsernameSet(roomCode: string) {
-    return new Set(
-      Array.from(this.roomMap.get(roomCode) || []).map(
-        (session) => session.username
-      )
-    );
+  addSession(
+    params: Omit<ConstructorParameters<typeof Session>[0], "room"> & {
+      roomCode: string;
+    }
+  ) {
+    const { roomCode } = params;
+    const matchedRoom = this.roomMap.get(roomCode);
+    if (matchedRoom) {
+      matchedRoom.addSession(params);
+    } else {
+      const room = new Room({ roomCode, sessionManager: this });
+      this.roomMap.set(roomCode, room);
+      room.addSession(params);
+    }
   }
 
-  addSession(session: Session) {
-    const { username, roomCode, ws } = session;
+  addSessionToIdMap(session: Session) {
+    this.idMap.set(session.id, session);
+  }
 
-    if (this.getUsernameSet(roomCode).has(username)) {
-      throw new Error(`用户 "${username}" 已经存在于 "${roomCode}" 房间里！`);
+  updateSessionStatus(id: string, status: SessionStatus) {
+    const session = this.idMap.get(id);
+    if (session) {
+      session.status = status;
+    } else {
+      throw new Error(`找不到 ID 为 "${id}" 的会话！`);
     }
-
-    this.idMap.set(ws.id, session);
-
-    let roomSessions = this.roomMap.get(roomCode);
-    if (!roomSessions) {
-      roomSessions = new Set();
-      this.roomMap.set(roomCode, roomSessions);
-    }
-    roomSessions.add(session);
   }
 
   getSessionById(id: string): Session | undefined {
@@ -41,21 +41,11 @@ export class SessionManager {
 
   getSessionsByRoomCode(roomCode: string): Set<Session> | undefined {
     const decodedRoomCode = decodeURIComponent(roomCode);
-    return this.roomMap.get(decodedRoomCode);
+    const matchedRoom = this.roomMap.get(decodedRoomCode);
+    return matchedRoom?.sessionsSet;
   }
 
-  removeSession(id: string) {
-    const session = this.idMap.get(id);
-    if (session) {
-      this.idMap.delete(id);
-
-      const roomSessions = this.roomMap.get(session.roomCode);
-      if (roomSessions) {
-        roomSessions.delete(session);
-        if (roomSessions.size === 0) {
-          this.roomMap.delete(session.roomCode);
-        }
-      }
-    }
+  removeSessionFromIdMap(id: string) {
+    this.idMap.delete(id);
   }
 }

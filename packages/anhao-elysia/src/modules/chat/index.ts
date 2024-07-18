@@ -1,11 +1,12 @@
 import { Elysia, t } from "elysia";
-import { ChatActionTypes, ClientMessageTypes } from "./types";
+import { ChatActionType, ClientMessageType } from "./types";
 import { SessionManager } from "./utils/sessionManager";
+import { SessionStatus } from "./types/session";
 
 const wsBodySchema = t.Object({
   message: t.Optional(t.String()),
   timestamp: t.Date(),
-  type: t.Enum(ClientMessageTypes),
+  type: t.Enum(ClientMessageType),
 });
 
 const wsQuerySchema = t.Object({
@@ -14,7 +15,7 @@ const wsQuerySchema = t.Object({
 });
 
 const wsResponseSchema = t.Object({
-  type: t.Enum(ChatActionTypes),
+  type: t.Enum(ChatActionType),
   username: t.String(),
   message: t.Optional(t.String()),
   timestamp: t.Date(),
@@ -30,12 +31,12 @@ const chatModule = new Elysia()
     response: wsResponseSchema,
     open: (ws) => {
       const { roomCode, username } = ws.data.query;
-
       try {
         sessionManager.addSession({
           username,
           roomCode,
           ws,
+          sessionManager,
         });
 
         console.log(`User ${username} joined room ${roomCode}`);
@@ -43,14 +44,14 @@ const chatModule = new Elysia()
         ws.subscribe(roomCode);
 
         ws.publish(roomCode, {
-          type: ChatActionTypes.JOIN,
+          type: ChatActionType.JOIN,
           username,
           timestamp: new Date(),
         });
       } catch (error: any) {
         console.error(error);
         ws.send({
-          type: ChatActionTypes.ERROR,
+          type: ChatActionType.ERROR,
           message: error?.message ?? "An error occurred",
           timestamp: new Date(),
           username: "System",
@@ -60,45 +61,76 @@ const chatModule = new Elysia()
     },
     message: (ws, { message, timestamp, type }) => {
       const { roomCode, username } = ws.data.query;
-      if (message && type === ClientMessageTypes.MESSAGE) {
-        ws.publish(roomCode, {
-          type: ChatActionTypes.MESSAGE,
-          username,
-          message,
-          timestamp,
-        });
+      switch (type) {
+        case ClientMessageType.MESSAGE: {
+          if (message) {
+            sessionManager.updateSessionStatus(ws.id, SessionStatus.ONLINE);
+            ws.publish(roomCode, {
+              type: ChatActionType.MESSAGE,
+              username,
+              message,
+              timestamp,
+            });
+          }
+          break;
+        }
+        case ClientMessageType.AWAY: {
+          sessionManager.updateSessionStatus(ws.id, SessionStatus.AWAY);
+          ws.publish(roomCode, {
+            type: ChatActionType.AWAY,
+            username,
+            timestamp,
+          });
+          break;
+        }
+        case ClientMessageType.BACK: {
+          sessionManager.updateSessionStatus(ws.id, SessionStatus.ONLINE);
+          ws.publish(roomCode, {
+            type: ChatActionType.BACK,
+            username,
+            timestamp,
+          });
+          break;
+        }
       }
     },
     close: (ws) => {
       const { id } = ws;
 
-      const { username, roomCode } = sessionManager.getSessionById(id) ?? {};
+      const matchedSession = sessionManager.getSessionById(id);
 
-      sessionManager.removeSession(id);
+      const { username, roomCode, status } = matchedSession ?? {};
 
-      if (roomCode) {
-        const sessionsSet = sessionManager.getSessionsByRoomCode(roomCode);
-        if (sessionsSet) {
-          sessionsSet.forEach((session) => {
-            session.ws.send({
-              type: ChatActionTypes.LEAVE,
-              username,
-              timestamp: new Date(),
+      if (matchedSession && status !== SessionStatus.AWAY) {
+        if (roomCode) {
+          const sessionsSet = sessionManager.getSessionsByRoomCode(roomCode);
+          if (sessionsSet) {
+            sessionsSet.forEach((session) => {
+              session.ws.send({
+                type: ChatActionType.LEAVE,
+                username,
+                timestamp: new Date(),
+              });
             });
-          });
+          }
         }
+
+        matchedSession?.terminate();
+
+        console.log(`User ${username} left room ${roomCode}`);
       }
 
-      console.log(`User ${username} left room ${roomCode}`);
-
-      ws.close();
+      ws?.close();
     },
   })
   .get("/chat/:roomCode", ({ params: { roomCode } }) => {
     const sessionsSet = sessionManager.getSessionsByRoomCode(roomCode);
 
     if (sessionsSet) {
-      return Array.from(sessionsSet).map(({ username }) => username);
+      return Array.from(sessionsSet).map(({ username, status }) => ({
+        username,
+        status,
+      }));
     }
 
     return [];

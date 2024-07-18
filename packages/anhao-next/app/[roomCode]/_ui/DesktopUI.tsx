@@ -1,6 +1,8 @@
 import { MessageBlock } from "@/app/_components/message/MessageBlock";
-import { WSMessage } from "@/app/_types";
+import { WSMessage } from "@/app/_types/message";
+import { UserInformation } from "@/app/_types/user";
 import { Button, Chip, Input, ScrollShadow } from "@nextui-org/react";
+import { SessionStatus } from "anhao-elysia/src/modules/chat/types/session";
 import { ChangeEventHandler, RefObject } from "react";
 
 export interface DesktopUIProps {
@@ -10,7 +12,7 @@ export interface DesktopUIProps {
   messagesEndRef: RefObject<HTMLDivElement>;
   message: string | undefined;
   messages: WSMessage[];
-  users: string[];
+  users: UserInformation[];
   username: string | null;
   toggleNotificationButton: JSX.Element;
   currentRoomCode: string;
@@ -35,10 +37,15 @@ export default function DesktopUI(props: DesktopUIProps) {
       <title>{`${currentRoomCode}: ${username}`}</title>
       <ScrollShadow className="flex flex-col flex-shrink-0 h-full w-200 bg-gray-900 rounded-lg pt-4 px-3 items-center gap-2">
         <p className="text-2xl font-bold mb-4 dark:text-white">在线用户</p>
-        {users.map((user) => {
+        {users.map(({ username, status }) => {
           return (
-            <Chip className="overflow-ellipsis max-w-xs" key={user}>
-              {user}
+            <Chip
+              className="overflow-ellipsis max-w-xs"
+              key={username}
+              variant="dot"
+              color={status === SessionStatus.ONLINE ? "success" : "warning"}
+            >
+              {username}
             </Chip>
           );
         })}

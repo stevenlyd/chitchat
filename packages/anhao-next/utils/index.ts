@@ -1,6 +1,6 @@
-import { WSMessage } from "@/app/_types";
+import { WSMessage } from "@/app/_types/message";
 import { NotificationConfig } from "@/hooks/useNotification";
-import { ChatActionTypes } from "anhao-elysia/src/modules/chat/types";
+import { ChatActionType } from "anhao-elysia/src/modules/chat/types";
 
 export const getNotificationConfig = (
   wsMessage: WSMessage
@@ -8,21 +8,21 @@ export const getNotificationConfig = (
   const { type, message, username } = wsMessage;
 
   switch (type) {
-    case ChatActionTypes.MESSAGE:
+    case ChatActionType.MESSAGE:
       return {
         title: `${username}`,
         body: message,
       };
-    case ChatActionTypes.ERROR:
+    case ChatActionType.ERROR:
       return {
         title: "An error occurred",
         body: message,
       };
-    case ChatActionTypes.JOIN:
+    case ChatActionType.JOIN:
       return {
         title: `${username} joined the chat room`,
       };
-    case ChatActionTypes.LEAVE:
+    case ChatActionType.LEAVE:
       return {
         title: `${username} left the chat room`,
       };

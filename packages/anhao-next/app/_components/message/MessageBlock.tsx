@@ -1,5 +1,5 @@
-import { WSMessage } from "../../_types";
-import { ChatActionTypes } from "anhao-elysia/src/modules/chat/types";
+import { WSMessage } from "../../_types/message";
+import { ChatActionType } from "anhao-elysia/src/modules/chat/types";
 import { FC, useContext, useMemo } from "react";
 import { Chip } from "@nextui-org/react";
 import { DateTime } from "luxon";
@@ -18,7 +18,7 @@ export const MessageBlock: FC<WSMessage> = ({
 
   const { username } = useContext(AppContext);
 
-  if (type === ChatActionTypes.MESSAGE) {
+  if (type === ChatActionType.MESSAGE) {
     if (senderUsername === username) {
       return (
         <div className="flex flex-row w-full items-center justify-end gap-5 p-2">
@@ -44,7 +44,7 @@ export const MessageBlock: FC<WSMessage> = ({
     <div className="flex flex-row w-full  items-center justify-between gap-10 p-2">
       <div className="flex flex-row gap-2">
         <Chip>{senderUsername}</Chip>
-        <span>{type === ChatActionTypes.JOIN ? "加入了" : "离开了"}聊天室</span>
+        <span>{type === ChatActionType.JOIN ? "加入了" : "离开了"}聊天室</span>
       </div>
       <span className="dark:text-white flex-shrink-0">{time}</span>
     </div>

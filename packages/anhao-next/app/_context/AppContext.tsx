@@ -1,9 +1,5 @@
 import { api } from "@/api";
 import {
-  ChatActionTypes,
-  ClientMessageTypes,
-} from "anhao-elysia/src/modules/chat/types";
-import {
   FC,
   ReactNode,
   createContext,
@@ -12,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { WSMessage } from "../_types";
+import { WSMessage } from "../_types/message";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { useSearchParams } from "next/navigation";
@@ -27,12 +23,20 @@ import NotificationButton, {
   NotificationButtonProps,
 } from "../_components/message/NotificationButton";
 import useIsMobile from "@/hooks/useIsMobile";
+import { UserInformation } from "../_types/user";
+import useWindowBlur from "@/hooks/useWindowBlur";
+import useWindowFocus from "@/hooks/useWindowFocus";
+import {
+  ChatActionType,
+  ClientMessageType,
+} from "anhao-elysia/src/modules/chat/types";
+import { SessionStatus } from "anhao-elysia/src/modules/chat/types/session";
 
 interface AppContext {
   ws: ReturnType<typeof api.chat.subscribe> | null;
   sendMessage: (message: string) => void;
   messages: WSMessage[];
-  users: string[];
+  users: UserInformation[];
   username: string | null;
   roomCode: string | null;
   enterChatRoom: (roomCode: string, username: string) => void;
@@ -70,7 +74,9 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
   );
   const [messages, setMessages] = useState<WSMessage[]>([]);
   const [roomCode, setRoomCode] = useState<string | null>(null);
-  const [usersSet, setUsersSet] = useState<Set<string>>(new Set<string>([]));
+  const [usersMap, setUsersMap] = useState<
+    Map<string, { username: string; status: SessionStatus }>
+  >(new Map());
   const [username, setUsername] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -95,7 +101,7 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
     return null;
   }, [roomCodeParam]);
 
-  const users = useMemo(() => Array.from(usersSet), [usersSet]);
+  const users = useMemo(() => Array.from(usersMap.values()), [usersMap]);
 
   const throttle = useCallback(
     <T extends (...args: any[]) => void>(
@@ -114,6 +120,24 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
     []
   );
 
+  useWindowBlur(() => {
+    if (ws) {
+      ws.send({
+        type: ClientMessageType.AWAY,
+        timestamp: new Date(),
+      });
+    }
+  });
+
+  useWindowFocus(() => {
+    if (ws) {
+      ws.send({
+        type: ClientMessageType.BACK,
+        timestamp: new Date(),
+      });
+    }
+  });
+
   const updateUserList = useCallback(
     async (_roomCode: string, _username: string) => {
       if (_roomCode) {
@@ -122,12 +146,18 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
           .get();
 
         if (userList) {
-          setUsersSet(() => {
-            const newSet = new Set(userList);
+          setUsersMap(() => {
+            const newMap = new Map<
+              string,
+              { username: string; status: SessionStatus }
+            >(userList.map((user) => [user.username, user]));
             if (_username) {
-              newSet.add(_username);
+              newMap.set(_username, {
+                username: _username,
+                status: SessionStatus.ONLINE,
+              });
             }
-            return newSet;
+            return newMap;
           });
         } else {
           console.warn("User list update failed");
@@ -163,7 +193,7 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
     (message: string) => {
       if (ws && username) {
         ws.send({
-          type: ClientMessageTypes.MESSAGE,
+          type: ClientMessageType.MESSAGE,
           message,
           timestamp: new Date(),
         });
@@ -173,7 +203,7 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
             message,
             username,
             timestamp: new Date(),
-            type: ChatActionTypes.MESSAGE,
+            type: ChatActionType.MESSAGE,
           },
         ]);
       } else {
@@ -193,7 +223,7 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
     setWs(null);
     setUsername(null);
     setMessages([]);
-    setUsersSet(new Set());
+    setUsersMap(new Map());
     setRoomCode(null);
     setIsConnected(false);
   }, [roomCode, router, ws]);
@@ -257,7 +287,7 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
     const heartBeatInterval = setInterval(() => {
       if (ws) {
         ws.send({
-          type: ClientMessageTypes.HEARTBEAT,
+          type: ClientMessageType.HEARTBEAT,
           message: "I'm alive",
           timestamp: new Date(),
         });
@@ -272,33 +302,105 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
   useEffect(() => {
     const handleWSMessage = (data: WSMessage) => {
       const { type, username: senderUserName, message } = data;
+      const pushMessage = () => {
+        setMessages((prev) => [
+          ...(prev.length > 100 ? prev.slice(1) : prev),
+          data,
+        ]);
+        const notificationConfig = getNotificationConfig(data);
+        if (notificationConfig) {
+          sendNotification(notificationConfig);
+        }
+      };
       if (username !== senderUserName) {
-        if (type !== ChatActionTypes.ERROR) {
-          setMessages((prev) => [
-            ...(prev.length > 100 ? prev.slice(1) : prev),
-            data,
-          ]);
-          const notificationConfig = getNotificationConfig(data);
-          if (notificationConfig) {
-            sendNotification(notificationConfig);
+        switch (type) {
+          case ChatActionType.JOIN: {
+            pushMessage();
+            setUsersMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(senderUserName, {
+                username: senderUserName,
+                status: SessionStatus.ONLINE,
+              });
+              return newMap;
+            });
+            break;
           }
-        } else {
-          toast(message, { type: "error" });
-          console.error(message);
+          case ChatActionType.LEAVE: {
+            pushMessage();
+            setUsersMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.delete(senderUserName);
+              return newMap;
+            });
+            break;
+          }
+          case ChatActionType.MESSAGE: {
+            pushMessage();
+            break;
+          }
+          case ChatActionType.AWAY: {
+            setUsersMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(senderUserName, {
+                username: senderUserName,
+                status: SessionStatus.AWAY,
+              });
+              return newMap;
+            });
+            break;
+          }
+          case ChatActionType.BACK: {
+            setUsersMap((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(senderUserName, {
+                username: senderUserName,
+                status: SessionStatus.ONLINE,
+              });
+              return newMap;
+            });
+            break;
+          }
+          case ChatActionType.ERROR: {
+            toast(message, { type: "error" });
+            console.error(message);
+            break;
+          }
         }
-        if (type === ChatActionTypes.JOIN) {
-          setUsersSet((prev) => {
-            const newSet = new Set(prev);
-            newSet.add(senderUserName);
-            return newSet;
-          });
-        } else if (type === ChatActionTypes.LEAVE) {
-          setUsersSet((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(senderUserName);
-            return newSet;
-          });
-        }
+        // if (type === ChatActionType.JOIN) {
+        //   setUsersMap((prev) => {
+        //     const newMap = new Map(prev);
+        //     newMap.set(senderUserName, {
+        //       username: senderUserName,
+        //       status: SessionStatus.ONLINE,
+        //     });
+        //     return newMap;
+        //   });
+        // } else if (type === ChatActionType.LEAVE) {
+        //   setUsersMap((prev) => {
+        //     const newMap = new Map(prev);
+        //     newMap.delete(senderUserName);
+        //     return newMap;
+        //   });
+        // } else if (type === ChatActionType.AWAY) {
+        //   setUsersMap((prev) => {
+        //     const newMap = new Map(prev);
+        //     newMap.set(senderUserName, {
+        //       username: senderUserName,
+        //       status: SessionStatus.AWAY,
+        //     });
+        //     return newMap;
+        //   });
+        // } else if (type === ChatActionType.BACK) {
+        //   setUsersMap((prev) => {
+        //     const newMap = new Map(prev);
+        //     newMap.set(senderUserName, {
+        //       username: senderUserName,
+        //       status: SessionStatus.ONLINE,
+        //     });
+        //     return newMap;
+        //   });
+        // }
       }
     };
 
