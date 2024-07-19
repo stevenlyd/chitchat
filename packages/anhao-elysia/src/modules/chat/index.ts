@@ -25,7 +25,7 @@ const sessionManager = new SessionManager();
 
 const chatModule = new Elysia()
   .ws("/chat", {
-    idleTimeout: 60,
+    idleTimeout: 10 * 60,
     body: wsBodySchema,
     query: wsQuerySchema,
     response: wsResponseSchema,
@@ -51,40 +51,44 @@ const chatModule = new Elysia()
     },
     message: (ws, { message, timestamp, type }) => {
       const { roomCode, username } = ws.data.query;
-      switch (type) {
-        case ClientMessageType.MESSAGE: {
-          if (message) {
-            sessionManager.updateSessionStatus(ws.id, SessionStatus.ONLINE);
+      try {
+        switch (type) {
+          case ClientMessageType.MESSAGE: {
+            if (message) {
+              sessionManager.updateSessionStatus(ws.id, SessionStatus.ONLINE);
+              ws.publish(roomCode, {
+                type: ChatActionType.MESSAGE,
+                username,
+                message,
+                timestamp,
+              });
+            }
+            break;
+          }
+          case ClientMessageType.AWAY: {
+            sessionManager.updateSessionStatus(ws.id, SessionStatus.AWAY);
             ws.publish(roomCode, {
-              type: ChatActionType.MESSAGE,
+              type: ChatActionType.AWAY,
               username,
-              message,
               timestamp,
             });
+            break;
           }
-          break;
+          case ClientMessageType.BACK: {
+            sessionManager.updateSessionStatus(ws.id, SessionStatus.ONLINE);
+            ws.publish(roomCode, {
+              type: ChatActionType.BACK,
+              username,
+              timestamp,
+            });
+            break;
+          }
+          case ClientMessageType.LEAVE: {
+            sessionManager.getSessionById(ws.id)?.terminate();
+          }
         }
-        case ClientMessageType.AWAY: {
-          sessionManager.updateSessionStatus(ws.id, SessionStatus.AWAY);
-          ws.publish(roomCode, {
-            type: ChatActionType.AWAY,
-            username,
-            timestamp,
-          });
-          break;
-        }
-        case ClientMessageType.BACK: {
-          sessionManager.updateSessionStatus(ws.id, SessionStatus.ONLINE);
-          ws.publish(roomCode, {
-            type: ChatActionType.BACK,
-            username,
-            timestamp,
-          });
-          break;
-        }
-        case ClientMessageType.LEAVE: {
-          sessionManager.getSessionById(ws.id)?.terminate();
-        }
+      } catch (error) {
+        console.error(error);
       }
     },
     close: (ws) => {
