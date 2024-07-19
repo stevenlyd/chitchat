@@ -127,6 +127,17 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
         type: ClientMessageType.AWAY,
         timestamp: new Date(),
       });
+
+      if (username) {
+        setUsersMap((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(username, {
+            username,
+            status: SessionStatus.AWAY,
+          });
+          return newMap;
+        });
+      }
     }
   });
 
@@ -136,6 +147,17 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
         type: ClientMessageType.BACK,
         timestamp: new Date(),
       });
+
+      if (username) {
+        setUsersMap((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(username, {
+            username,
+            status: SessionStatus.ONLINE,
+          });
+          return newMap;
+        });
+      }
     }
   });
 

@@ -38,16 +38,6 @@ const chatModule = new Elysia()
           ws,
           sessionManager,
         });
-
-        console.log(`User ${username} joined room ${roomCode}`);
-
-        ws.subscribe(roomCode);
-
-        ws.publish(roomCode, {
-          type: ChatActionType.JOIN,
-          username,
-          timestamp: new Date(),
-        });
       } catch (error: any) {
         console.error(error);
         ws.send({

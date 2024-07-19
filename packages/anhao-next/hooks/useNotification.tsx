@@ -40,7 +40,10 @@ export const useNotification = () => {
 
   const sendNotification = useCallback(
     async (options: NotificationConfig) => {
-      if (isEnabled && document.visibilityState === "hidden") {
+      if (
+        isEnabled &&
+        (document.visibilityState === "hidden" || !document.hasFocus())
+      ) {
         const permission = await requestPermission();
         setIsEnabled(permission === "granted");
 

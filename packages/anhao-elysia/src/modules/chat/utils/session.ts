@@ -20,6 +20,14 @@ export class Session {
     this.$status = SessionStatus.ONLINE;
     this.$sessionManager = sessionManager;
     this.$room = room;
+    this.ws?.subscribe(this.roomCode);
+    this.sessionManager.addSessionToIdMap(this);
+    this.room.addSessionToUsernameMap(this);
+    this.publish(this.roomCode, {
+      type: ChatActionType.JOIN,
+      username,
+      timestamp: new Date(),
+    });
     if (hibernationTolerance) {
       this.$hibernationTolerance = hibernationTolerance;
     }
@@ -94,11 +102,11 @@ export class Session {
     if (this.status !== SessionStatus.AWAY) {
       this.$status = SessionStatus.AWAY;
     }
-      this.publish(this.roomCode, {
-        type: ChatActionType.AWAY,
-        username: this.username,
-        timestamp: new Date(),
-      });
+    this.publish(this.roomCode, {
+      type: ChatActionType.AWAY,
+      username: this.username,
+      timestamp: new Date(),
+    });
   };
 
   back = () => {
@@ -122,9 +130,20 @@ export class Session {
     }
     this.ws?.close();
     this.ws = null;
+    console.log(`User ${this.username} hibernated in room ${this.roomCode}`);
     this.timeoutId = setTimeout(() => {
       this.terminate();
     }, this.hibernationTolerance);
+  };
+
+  reconnect = (ws: ElysiaWS<any, any, any>) => {
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+    }
+    this.ws = ws;
+    this.ws.subscribe(this.roomCode);
+    this.status = SessionStatus.ONLINE;
+    console.log(`User ${this.username} reconnected to room ${this.roomCode}`);
   };
 
   terminate = () => {

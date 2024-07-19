@@ -1,3 +1,4 @@
+import { ChatActionType } from "../types";
 import type { RoomConstructorParams } from "../types/room";
 import { SessionStatus } from "../types/session";
 import { Session } from "./session";
@@ -40,17 +41,13 @@ export class Room {
     const { username, ws } = params;
     const matchedSession = this.usernameSessionMap.get(username);
     if (matchedSession && matchedSession.status === SessionStatus.AWAY) {
-      ws.subscribe(this.roomCode);
-      matchedSession.ws = ws;
-      matchedSession.status = SessionStatus.ONLINE;
+      matchedSession.reconnect(ws);
     } else if (!matchedSession) {
-      const session = new Session({
+      new Session({
         ...params,
         sessionManager: this.sessionManager,
         room: this,
       });
-      this.usernameSessionMap.set(username, session);
-      this.sessionManager.addSessionToIdMap(session);
     } else if (
       matchedSession &&
       matchedSession.status === SessionStatus.ONLINE
@@ -70,6 +67,12 @@ export class Room {
   };
 
   removeSessionFromUsernameMap = (username: string) => {
-    this.usernameSessionMap.delete(username);
+    this.usernameSessionMap.delete(username); 
+  };
+
+  addSessionToUsernameMap = (session: Session) => {
+    const { username } = session;
+    this.usernameSessionMap.set(username, session);
+    console.log(`User ${username} joined room ${this.roomCode}`);
   };
 }
