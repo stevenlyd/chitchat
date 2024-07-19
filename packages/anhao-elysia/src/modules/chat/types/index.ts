@@ -12,5 +12,6 @@ export enum ClientMessageType {
   MESSAGE = "message",
   AWAY = "away",
   BACK = "back",
+  LEAVE = "leave",
   HEARTBEAT = "heartbeat",
 }

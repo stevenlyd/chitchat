@@ -12,5 +12,5 @@ export interface SessionConstructorParams {
   username: string;
   sessionManager: SessionManager;
   room: Room;
-  awayTolerance?: number;
+  hibernationTolerance?: number;
 }

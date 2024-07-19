@@ -31,6 +31,7 @@ import {
   ClientMessageType,
 } from "anhao-elysia/src/modules/chat/types";
 import { SessionStatus } from "anhao-elysia/src/modules/chat/types/session";
+import useBeforeUnload from "@/hooks/useBeforeUnload";
 
 interface AppContext {
   ws: ReturnType<typeof api.chat.subscribe> | null;
@@ -367,40 +368,6 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
             break;
           }
         }
-        // if (type === ChatActionType.JOIN) {
-        //   setUsersMap((prev) => {
-        //     const newMap = new Map(prev);
-        //     newMap.set(senderUserName, {
-        //       username: senderUserName,
-        //       status: SessionStatus.ONLINE,
-        //     });
-        //     return newMap;
-        //   });
-        // } else if (type === ChatActionType.LEAVE) {
-        //   setUsersMap((prev) => {
-        //     const newMap = new Map(prev);
-        //     newMap.delete(senderUserName);
-        //     return newMap;
-        //   });
-        // } else if (type === ChatActionType.AWAY) {
-        //   setUsersMap((prev) => {
-        //     const newMap = new Map(prev);
-        //     newMap.set(senderUserName, {
-        //       username: senderUserName,
-        //       status: SessionStatus.AWAY,
-        //     });
-        //     return newMap;
-        //   });
-        // } else if (type === ChatActionType.BACK) {
-        //   setUsersMap((prev) => {
-        //     const newMap = new Map(prev);
-        //     newMap.set(senderUserName, {
-        //       username: senderUserName,
-        //       status: SessionStatus.ONLINE,
-        //     });
-        //     return newMap;
-        //   });
-        // }
       }
     };
 
@@ -467,6 +434,13 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
       document.removeEventListener("focusout", handleFocusOut);
     };
   }, []);
+
+  useBeforeUnload(() => {
+    ws?.send({
+      type: ClientMessageType.LEAVE,
+      timestamp: new Date(),
+    });
+  });
 
   const contextValue = useMemo(
     () => ({

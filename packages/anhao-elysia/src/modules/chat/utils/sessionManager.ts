@@ -23,7 +23,10 @@ export class SessionManager {
   }
 
   addSessionToIdMap(session: Session) {
-    this.idMap.set(session.id, session);
+    const { id } = session;
+    if (id) {
+      this.idMap.set(id, session);
+    }
   }
 
   updateSessionStatus(id: string, status: SessionStatus) {

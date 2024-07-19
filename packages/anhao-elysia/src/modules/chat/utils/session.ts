@@ -7,33 +7,33 @@ import { SessionConstructorParams, SessionStatus } from "../types/session";
 export class Session {
   private readonly $username: string;
   private readonly $sessionManager: SessionManager;
-  private readonly $awayTolerance = 5 * 60 * 1000;
+  private readonly $hibernationTolerance = 5 * 60 * 1000;
   private readonly $room: Room;
-  private $ws: ElysiaWS<any, any, any>;
+  private $ws: ElysiaWS<any, any, any> | null = null;
   private $status: SessionStatus;
   private $timeoutId: Timer | null = null;
 
   constructor(params: SessionConstructorParams) {
-    const { ws, username, sessionManager, awayTolerance, room } = params;
+    const { ws, username, sessionManager, hibernationTolerance, room } = params;
     this.$ws = ws;
     this.$username = username;
     this.$status = SessionStatus.ONLINE;
     this.$sessionManager = sessionManager;
     this.$room = room;
-    if (awayTolerance) {
-      this.$awayTolerance = awayTolerance;
+    if (hibernationTolerance) {
+      this.$hibernationTolerance = hibernationTolerance;
     }
   }
 
   get id() {
-    return this.ws.id;
+    return this.ws?.id;
   }
 
   get ws() {
     return this.$ws;
   }
 
-  set ws(ws: ElysiaWS<any, any, any>) {
+  set ws(ws: ElysiaWS<any, any, any> | null) {
     this.$ws = ws;
   }
 
@@ -55,20 +55,19 @@ export class Session {
 
   set status(status: SessionStatus) {
     if (status !== this.$status) {
-      this.$status = status;
       switch (status) {
         case SessionStatus.ONLINE:
-          this.setSessionOnline();
+          this.back();
           break;
         case SessionStatus.AWAY:
-          this.setSessionAway();
+          this.away();
           break;
       }
     }
   }
 
-  private get awayTolerance() {
-    return this.$awayTolerance;
+  private get hibernationTolerance() {
+    return this.$hibernationTolerance;
   }
 
   private get timeoutId() {
@@ -83,32 +82,62 @@ export class Session {
     return this.$sessionManager;
   }
 
-  setSessionAway = () => {
-    this.timeoutId = setTimeout(() => {
-      this.status = SessionStatus.AWAY;
-      this.ws.publish(this.roomCode, {
-        type: ChatActionType.LOST,
-        username: this.$username,
-        timestamp: new Date(),
-      });
-      this.terminate();
-    }, this.awayTolerance);
+  send = (data: any) => {
+    this.ws?.send(data);
   };
 
-  setSessionOnline = () => {
-    if (this.timeoutId) {
-      clearTimeout(this.timeoutId);
-      this.ws.publish(this.roomCode, {
-        type: ChatActionType.BACK,
-        username: this.$username,
+  publish = (roomCode: string, data: any) => {
+    this.ws?.publish(roomCode, data);
+  };
+
+  away = () => {
+    if (this.status !== SessionStatus.AWAY) {
+      this.$status = SessionStatus.AWAY;
+    }
+      this.publish(this.roomCode, {
+        type: ChatActionType.AWAY,
+        username: this.username,
         timestamp: new Date(),
       });
+  };
+
+  back = () => {
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
     }
+    if (this.status !== SessionStatus.ONLINE) {
+      this.$status = SessionStatus.ONLINE;
+    }
+    this.publish(this.roomCode, {
+      type: ChatActionType.BACK,
+      username: this.$username,
+      timestamp: new Date(),
+    });
+  };
+
+  hibernate = () => {
+    this.away();
+    if (this.id) {
+      this.sessionManager.removeSessionFromIdMap(this.id);
+    }
+    this.ws?.close();
+    this.ws = null;
+    this.timeoutId = setTimeout(() => {
+      this.terminate();
+    }, this.hibernationTolerance);
   };
 
   terminate = () => {
-    this.sessionManager.removeSessionFromIdMap(this.id);
+    if (this.id) {
+      this.sessionManager.removeSessionFromIdMap(this.id);
+    }
     this.room.removeSessionFromUsernameMap(this.username);
-    this.ws.close();
+    this.publish(this.roomCode, {
+      type: ChatActionType.LEAVE,
+      username: this.username,
+      timestamp: new Date(),
+    });
+    console.log(`User ${this.username} left room ${this.roomCode}`);
+    this.ws?.close();
   };
 }

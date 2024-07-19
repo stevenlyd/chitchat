@@ -63,6 +63,12 @@ export class Room {
     }
   };
 
+  broadcast = (data: any) => {
+    this.sessionsArray.forEach((session) => {
+      session.send(data);
+    });
+  };
+
   removeSessionFromUsernameMap = (username: string) => {
     this.usernameSessionMap.delete(username);
   };

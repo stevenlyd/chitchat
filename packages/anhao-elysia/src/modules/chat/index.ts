@@ -92,6 +92,9 @@ const chatModule = new Elysia()
           });
           break;
         }
+        case ClientMessageType.LEAVE: {
+          sessionManager.getSessionById(ws.id)?.terminate();
+        }
       }
     },
     close: (ws) => {
@@ -99,28 +102,9 @@ const chatModule = new Elysia()
 
       const matchedSession = sessionManager.getSessionById(id);
 
-      const { username, roomCode, status } = matchedSession ?? {};
-
-      if (matchedSession && status !== SessionStatus.AWAY) {
-        if (roomCode) {
-          const sessionsSet = sessionManager.getSessionsByRoomCode(roomCode);
-          if (sessionsSet) {
-            sessionsSet.forEach((session) => {
-              session.ws.send({
-                type: ChatActionType.LEAVE,
-                username,
-                timestamp: new Date(),
-              });
-            });
-          }
-        }
-
-        matchedSession?.terminate();
-
-        console.log(`User ${username} left room ${roomCode}`);
+      if (matchedSession) {
+        matchedSession.hibernate();
       }
-
-      ws?.close();
     },
   })
   .get("/chat/:roomCode", ({ params: { roomCode } }) => {
