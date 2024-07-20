@@ -5,6 +5,7 @@ import type { Room } from "../utils/room";
 export enum SessionStatus {
   ONLINE = "online",
   AWAY = "away",
+  HIBERNATING = "hibernating",
 }
 
 export interface SessionConstructorParams {

@@ -40,7 +40,7 @@ export class Room {
   ) => {
     const { username, ws } = params;
     const matchedSession = this.usernameSessionMap.get(username);
-    if (matchedSession && matchedSession.status === SessionStatus.AWAY) {
+    if (matchedSession && matchedSession.status === SessionStatus.HIBERNATING) {
       matchedSession.reconnect(ws);
     } else if (!matchedSession) {
       new Session({
@@ -67,12 +67,21 @@ export class Room {
   };
 
   removeSessionFromUsernameMap = (username: string) => {
-    this.usernameSessionMap.delete(username); 
+    this.usernameSessionMap.delete(username);
   };
 
   addSessionToUsernameMap = (session: Session) => {
     const { username } = session;
     this.usernameSessionMap.set(username, session);
     console.log(`User ${username} joined room ${this.roomCode}`);
+  };
+
+  cleanUpDeadSessions = async () => {
+    const tasks: Promise<boolean>[] = [];
+    this.usernameSessionMap.forEach((session) => {
+      tasks.push(session.healthCheck());
+    });
+    const doneTasks = await Promise.all(tasks);
+    return doneTasks.filter((doneTask) => !doneTask).length;
   };
 }

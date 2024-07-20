@@ -7,11 +7,12 @@ import { SessionConstructorParams, SessionStatus } from "../types/session";
 export class Session {
   private readonly $username: string;
   private readonly $sessionManager: SessionManager;
-  private readonly $hibernationTolerance = 5 * 60 * 1000;
+  private readonly $hibernationTolerance = 1 * 60 * 1000;
   private readonly $room: Room;
   private $ws: ElysiaWS<any, any, any> | null = null;
   private $status: SessionStatus;
   private $timeoutId: Timer | null = null;
+  private $lastActiveAt: Date | null = null;
 
   constructor(params: SessionConstructorParams) {
     const { ws, username, sessionManager, hibernationTolerance, room } = params;
@@ -20,6 +21,7 @@ export class Session {
     this.$status = SessionStatus.ONLINE;
     this.$sessionManager = sessionManager;
     this.$room = room;
+    this.$lastActiveAt = new Date();
     this.ws?.subscribe(this.roomCode);
     this.sessionManager.addSessionToIdMap(this);
     this.room.addSessionToUsernameMap(this);
@@ -61,16 +63,17 @@ export class Session {
     return this.$status;
   }
 
-  set status(status: SessionStatus) {
+  get lastActiveAt() {
+    return this.$lastActiveAt;
+  }
+
+  set lastActiveAt(lastActiveAt: Date | null) {
+    this.$lastActiveAt = lastActiveAt;
+  }
+
+  private set status(status: SessionStatus) {
     if (status !== this.$status) {
-      switch (status) {
-        case SessionStatus.ONLINE:
-          this.back();
-          break;
-        case SessionStatus.AWAY:
-          this.away();
-          break;
-      }
+      this.$status = status;
     }
   }
 
@@ -100,13 +103,14 @@ export class Session {
 
   away = () => {
     if (this.status !== SessionStatus.AWAY) {
-      this.$status = SessionStatus.AWAY;
+      this.status = SessionStatus.AWAY;
+      this.publish(this.roomCode, {
+        type: ChatActionType.AWAY,
+        username: this.username,
+        timestamp: new Date(),
+      });
+      console.log(`User ${this.username} went away in room ${this.roomCode}`);
     }
-    this.publish(this.roomCode, {
-      type: ChatActionType.AWAY,
-      username: this.username,
-      timestamp: new Date(),
-    });
   };
 
   back = () => {
@@ -114,17 +118,20 @@ export class Session {
       clearTimeout(this.timeoutId);
     }
     if (this.status !== SessionStatus.ONLINE) {
-      this.$status = SessionStatus.ONLINE;
+      this.status = SessionStatus.ONLINE;
+      this.publish(this.roomCode, {
+        type: ChatActionType.BACK,
+        username: this.$username,
+        timestamp: new Date(),
+      });
+      console.log(`User ${this.username} came back in room ${this.roomCode}`);
     }
-    this.publish(this.roomCode, {
-      type: ChatActionType.BACK,
-      username: this.$username,
-      timestamp: new Date(),
-    });
   };
 
   hibernate = () => {
-    this.away();
+    if (this.status !== SessionStatus.HIBERNATING) {
+      this.status = SessionStatus.HIBERNATING;
+    }
     if (this.id) {
       this.sessionManager.removeSessionFromIdMap(this.id);
     }
@@ -140,8 +147,8 @@ export class Session {
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);
     }
+    ws.subscribe(this.roomCode);
     this.ws = ws;
-    this.ws.subscribe(this.roomCode);
     this.status = SessionStatus.ONLINE;
     console.log(`User ${this.username} reconnected to room ${this.roomCode}`);
   };
@@ -158,5 +165,38 @@ export class Session {
     });
     console.log(`User ${this.username} left room ${this.roomCode}`);
     this.ws?.close();
+  };
+
+  heartbeat = () => {
+    this.lastActiveAt = new Date();
+  };
+
+  healthCheck = async () => {
+    return new Promise<boolean>((resolve) => {
+      const now = new Date();
+      if (!this.lastActiveAt) {
+        this.terminate();
+        resolve(false);
+        return;
+      }
+
+      if (this.status === SessionStatus.ONLINE) {
+        if (now.getSeconds() - this.lastActiveAt.getSeconds() > 6) {
+          this.terminate();
+          resolve(false);
+          return;
+        }
+        resolve(true);
+        return;
+      }
+
+      if (now.getSeconds() - this.lastActiveAt.getSeconds() > 2 * 60) {
+        resolve(false);
+        return;
+      } else {
+        resolve(true);
+        return;
+      }
+    });
   };
 }

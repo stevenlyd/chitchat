@@ -1,4 +1,3 @@
-import type { SessionStatus } from "../types/session";
 import { Room } from "./room";
 import { Session } from "./session";
 
@@ -29,15 +28,6 @@ export class SessionManager {
     }
   }
 
-  updateSessionStatus(id: string, status: SessionStatus) {
-    const session = this.idMap.get(id);
-    if (session) {
-      session.status = status;
-    } else {
-      throw new Error(`找不到 ID 为 "${id}" 的会话！`);
-    }
-  }
-
   getSessionById(id: string): Session | undefined {
     return this.idMap.get(id);
   }
@@ -51,4 +41,36 @@ export class SessionManager {
   removeSessionFromIdMap(id: string) {
     this.idMap.delete(id);
   }
+
+  cleanUpDeadSessions = async () => {
+    // Clean up sessions in the idMap
+    const cleaUpById = async () => {
+      const tasks: Promise<boolean>[] = [];
+      this.idMap.forEach((session) => {
+        tasks.push(session.healthCheck());
+      });
+      const doneTasks = await Promise.all(tasks);
+      return doneTasks.filter((doneTask) => !doneTask).length;
+    };
+
+    // Clean up sessions in the roomMap
+    const cleanUpByRoom = async () => {
+      const tasks: Promise<number>[] = [];
+      this.roomMap.forEach((room) => {
+        tasks.push(room.cleanUpDeadSessions());
+      });
+      const doneTasks = await Promise.all(tasks);
+      return doneTasks.reduce((acc, curr) => acc + curr, 0);
+    };
+
+    const [number1, number2] = await Promise.all([
+      cleaUpById(),
+      cleanUpByRoom(),
+    ]);
+    if (number1 > 0 || number2 > 0) {
+      console.log(
+        `Cleaned up ${number1} sessions in idMap, ${number2} sessions in roomMap`
+      );
+    }
+  };
 }

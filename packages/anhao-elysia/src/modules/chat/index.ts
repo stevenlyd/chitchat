@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { ChatActionType, ClientMessageType } from "./types";
 import { SessionManager } from "./utils/sessionManager";
 import { SessionStatus } from "./types/session";
+import cron from "@elysiajs/cron";
 
 const wsBodySchema = t.Object({
   message: t.Optional(t.String()),
@@ -52,39 +53,50 @@ const chatModule = new Elysia()
     message: (ws, { message, timestamp, type }) => {
       const { roomCode, username } = ws.data.query;
       try {
-        switch (type) {
-          case ClientMessageType.MESSAGE: {
-            if (message) {
-              sessionManager.updateSessionStatus(ws.id, SessionStatus.ONLINE);
+        const matchedSession = sessionManager.getSessionById(ws.id);
+        if (matchedSession) {
+          switch (type) {
+            case ClientMessageType.MESSAGE: {
+              if (message) {
+                matchedSession.back();
+                ws.publish(roomCode, {
+                  // @ts-ignore
+                  type: ChatActionType.MESSAGE,
+                  username,
+                  message,
+                  timestamp,
+                });
+              }
+              break;
+            }
+            case ClientMessageType.AWAY: {
+              matchedSession.away();
               ws.publish(roomCode, {
-                type: ChatActionType.MESSAGE,
+                // @ts-ignore
+                type: ChatActionType.AWAY,
                 username,
-                message,
                 timestamp,
               });
+              break;
             }
-            break;
-          }
-          case ClientMessageType.AWAY: {
-            sessionManager.updateSessionStatus(ws.id, SessionStatus.AWAY);
-            ws.publish(roomCode, {
-              type: ChatActionType.AWAY,
-              username,
-              timestamp,
-            });
-            break;
-          }
-          case ClientMessageType.BACK: {
-            sessionManager.updateSessionStatus(ws.id, SessionStatus.ONLINE);
-            ws.publish(roomCode, {
-              type: ChatActionType.BACK,
-              username,
-              timestamp,
-            });
-            break;
-          }
-          case ClientMessageType.LEAVE: {
-            sessionManager.getSessionById(ws.id)?.terminate();
+            case ClientMessageType.BACK: {
+              matchedSession.back();
+              ws.publish(roomCode, {
+                // @ts-ignore
+                type: ChatActionType.BACK,
+                username,
+                timestamp,
+              });
+              break;
+            }
+            case ClientMessageType.LEAVE: {
+              matchedSession.terminate();
+              break;
+            }
+            case ClientMessageType.HEARTBEAT: {
+              matchedSession.lastActiveAt = new Date();
+              break;
+            }
           }
         }
       } catch (error) {
@@ -97,21 +109,57 @@ const chatModule = new Elysia()
       const matchedSession = sessionManager.getSessionById(id);
 
       if (matchedSession) {
-        matchedSession.hibernate();
+        switch (matchedSession.status) {
+          case SessionStatus.ONLINE: {
+            matchedSession.terminate();
+            break;
+          }
+          case SessionStatus.AWAY: {
+            matchedSession.hibernate();
+            break;
+          }
+          case SessionStatus.HIBERNATING: {
+            const { username, roomCode } = matchedSession;
+            console.log(
+              `User ${username} is already hibernating in room ${roomCode}`
+            );
+            break;
+          }
+        }
       }
     },
   })
-  .get("/chat/:roomCode", ({ params: { roomCode } }) => {
-    const sessionsSet = sessionManager.getSessionsByRoomCode(roomCode);
+  .get(
+    "/chat/:roomCode",
+    ({ params: { roomCode } }) => {
+      const sessionsSet = sessionManager.getSessionsByRoomCode(roomCode);
 
-    if (sessionsSet) {
-      return Array.from(sessionsSet).map(({ username, status }) => ({
-        username,
-        status,
-      }));
+      if (sessionsSet) {
+        return Array.from(sessionsSet).map(({ username, status }) => ({
+          username,
+          status,
+        }));
+      }
+
+      return [];
+    },
+    {
+      response: t.Array(
+        t.Object({
+          username: t.String(),
+          status: t.Enum(SessionStatus),
+        })
+      ),
     }
-
-    return [];
-  });
+  )
+  .use(
+    cron({
+      name: "cleanUpDeadSessions",
+      pattern: "*/10 * * * * *",
+      run: async () => {
+        await sessionManager.cleanUpDeadSessions();
+      },
+    })
+  );
 
 export default chatModule;
