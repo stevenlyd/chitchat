@@ -1,4 +1,3 @@
-import { ChatActionType } from "../types";
 import type { RoomConstructorParams } from "../types/room";
 import { SessionStatus } from "../types/session";
 import { Session } from "./session";
@@ -60,9 +59,12 @@ export class Room {
     }
   };
 
-  broadcast = (data: any) => {
+  broadcast = (data: any, excludeUsernames: string[] = []) => {
+    const excludeSet = new Set(excludeUsernames);
     this.sessionsArray.forEach((session) => {
-      session.send(data);
+      if (!excludeSet.has(session.username)) {
+        session.send(data);
+      }
     });
   };
 

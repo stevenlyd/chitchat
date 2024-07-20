@@ -158,11 +158,14 @@ export class Session {
       this.sessionManager.removeSessionFromIdMap(this.id);
     }
     this.room.removeSessionFromUsernameMap(this.username);
-    this.publish(this.roomCode, {
-      type: ChatActionType.LEAVE,
-      username: this.username,
-      timestamp: new Date(),
-    });
+    this.room.broadcast(
+      {
+        type: ChatActionType.LEAVE,
+        username: this.username,
+        timestamp: new Date(),
+      },
+      [this.username]
+    );
     console.log(`User ${this.username} left room ${this.roomCode}`);
     this.ws?.close();
   };
