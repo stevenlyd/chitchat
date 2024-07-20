@@ -50,7 +50,7 @@ export class Room {
       });
     } else if (
       matchedSession &&
-      matchedSession.status === SessionStatus.ONLINE
+      matchedSession.status !== SessionStatus.HIBERNATING
     ) {
       throw new Error(
         `用户 "${username}" 已经存在于 "${this.roomCode}" 房间里！`

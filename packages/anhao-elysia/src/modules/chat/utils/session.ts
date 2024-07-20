@@ -180,7 +180,7 @@ export class Session {
         return;
       }
 
-      if (this.status === SessionStatus.ONLINE) {
+      if (this.status !== SessionStatus.HIBERNATING) {
         if (now.getSeconds() - this.lastActiveAt.getSeconds() > 6) {
           this.terminate();
           resolve(false);
@@ -190,7 +190,10 @@ export class Session {
         return;
       }
 
-      if (now.getSeconds() - this.lastActiveAt.getSeconds() > 2 * 60) {
+      if (
+        now.getSeconds() - this.lastActiveAt.getSeconds() >
+        this.hibernationTolerance + 5
+      ) {
         resolve(false);
         return;
       } else {

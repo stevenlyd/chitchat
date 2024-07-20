@@ -58,6 +58,7 @@ const chatModule = new Elysia()
           switch (type) {
             case ClientMessageType.MESSAGE: {
               if (message) {
+                matchedSession.heartbeat();
                 matchedSession.back();
                 ws.publish(roomCode, {
                   // @ts-ignore
@@ -70,6 +71,7 @@ const chatModule = new Elysia()
               break;
             }
             case ClientMessageType.AWAY: {
+              matchedSession.heartbeat();
               matchedSession.away();
               ws.publish(roomCode, {
                 // @ts-ignore
@@ -80,6 +82,7 @@ const chatModule = new Elysia()
               break;
             }
             case ClientMessageType.BACK: {
+              matchedSession.heartbeat();
               matchedSession.back();
               ws.publish(roomCode, {
                 // @ts-ignore
@@ -94,7 +97,7 @@ const chatModule = new Elysia()
               break;
             }
             case ClientMessageType.HEARTBEAT: {
-              matchedSession.lastActiveAt = new Date();
+              matchedSession.heartbeat();
               break;
             }
           }
