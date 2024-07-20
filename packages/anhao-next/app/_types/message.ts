@@ -1,4 +1,4 @@
-import { api } from "@/api";
+import type { api } from "@/api";
 
 export type Message = {
   content: string;

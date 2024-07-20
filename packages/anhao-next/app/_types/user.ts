@@ -1,4 +1,4 @@
-import { SessionStatus } from "anhao-elysia/src/modules/chat/types/session";
+import type { SessionStatus } from "anhao-elysia/src/modules/chat/types/session";
 
 export type UserInformation = {
   username: string;
