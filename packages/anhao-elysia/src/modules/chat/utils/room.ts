@@ -69,7 +69,16 @@ export class Room {
   };
 
   removeSessionFromUsernameMap = (username: string) => {
-    this.usernameSessionMap.delete(username);
+    const isSuccess = this.usernameSessionMap.delete(username);
+    if (isSuccess) {
+      console.log(
+        `Removed session with username ${username} from room ${this.roomCode}`
+      );
+    } else {
+      console.warn(
+        `Failed to remove session with username ${username} from room ${this.roomCode}`
+      );
+    }
   };
 
   addSessionToUsernameMap = (session: Session) => {

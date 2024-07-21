@@ -132,14 +132,21 @@ export class Session {
     if (this.status !== SessionStatus.HIBERNATING) {
       this.status = SessionStatus.HIBERNATING;
     }
+
+    // Remove the session from the root id map before we close the connection
     if (this.id) {
       this.sessionManager.removeSessionFromIdMap(this.id);
     }
+
     this.ws?.close();
     this.ws = null;
+
     console.log(`User ${this.username} hibernated in room ${this.roomCode}`);
     this.timeoutId = setTimeout(() => {
       this.terminate();
+      console.log(
+        `Hibernated user ${this.username} in room ${this.roomCode} was terminated due to inactivity`
+      );
     }, this.hibernationTolerance);
   };
 
@@ -147,8 +154,12 @@ export class Session {
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);
     }
+
     ws.subscribe(this.roomCode);
     this.ws = ws;
+
+    this.sessionManager.addSessionToIdMap(this);
+
     this.status = SessionStatus.ONLINE;
     console.log(`User ${this.username} reconnected to room ${this.roomCode}`);
   };
@@ -157,7 +168,9 @@ export class Session {
     if (this.id) {
       this.sessionManager.removeSessionFromIdMap(this.id);
     }
+
     this.room.removeSessionFromUsernameMap(this.username);
+
     this.room.broadcast(
       {
         type: ChatActionType.LEAVE,
@@ -166,6 +179,7 @@ export class Session {
       },
       [this.username]
     );
+
     console.log(`User ${this.username} left room ${this.roomCode}`);
     this.ws?.close();
   };
@@ -197,6 +211,7 @@ export class Session {
         now.getSeconds() - this.lastActiveAt.getSeconds() >
         this.hibernationTolerance + 5
       ) {
+        this.terminate();
         resolve(false);
         return;
       } else {

@@ -5,11 +5,11 @@ export class SessionManager {
   private idMap = new Map<string, Session>();
   private roomMap = new Map<string, Room>();
 
-  addSession(
+  addSession = (
     params: Omit<ConstructorParameters<typeof Session>[0], "room"> & {
       roomCode: string;
     }
-  ) {
+  ) => {
     const { roomCode } = params;
     const matchedRoom = this.roomMap.get(roomCode);
     if (matchedRoom) {
@@ -19,28 +19,33 @@ export class SessionManager {
       this.roomMap.set(roomCode, room);
       room.addSession(params);
     }
-  }
+  };
 
-  addSessionToIdMap(session: Session) {
+  addSessionToIdMap = (session: Session) => {
     const { id } = session;
     if (id) {
       this.idMap.set(id, session);
     }
-  }
+  };
 
-  getSessionById(id: string): Session | undefined {
+  getSessionById = (id: string): Session | undefined => {
     return this.idMap.get(id);
-  }
+  };
 
-  getSessionsByRoomCode(roomCode: string): Set<Session> | undefined {
+  getSessionsByRoomCode = (roomCode: string): Set<Session> | undefined => {
     const decodedRoomCode = decodeURIComponent(roomCode);
     const matchedRoom = this.roomMap.get(decodedRoomCode);
     return matchedRoom?.sessionsSet;
-  }
+  };
 
-  removeSessionFromIdMap(id: string) {
-    this.idMap.delete(id);
-  }
+  removeSessionFromIdMap = (id: string) => {
+    const isSuccess = this.idMap.delete(id);
+    if (isSuccess) {
+      console.log(`Removed session with id ${id}`);
+    } else {
+      console.warn(`Failed to remove session with id ${id}`);
+    }
+  };
 
   cleanUpDeadSessions = async () => {
     // Clean up sessions in the idMap
