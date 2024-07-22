@@ -197,7 +197,7 @@ export class Session {
         return;
       }
 
-      if (this.status !== SessionStatus.HIBERNATING) {
+      if (this.status === SessionStatus.ONLINE) {
         if (now.getSeconds() - this.lastActiveAt.getSeconds() > 6) {
           this.terminate();
           resolve(false);
@@ -208,6 +208,7 @@ export class Session {
       }
 
       if (
+        this.status === SessionStatus.HIBERNATING &&
         now.getSeconds() - this.lastActiveAt.getSeconds() >
         this.hibernationTolerance + 5
       ) {

@@ -97,7 +97,6 @@ const chatModule = new Elysia()
               break;
             }
             case ClientMessageType.HEARTBEAT: {
-              console.log(`Heartbeat received from ${username} in room: ${roomCode}`)
               matchedSession.heartbeat();
               break;
             }
