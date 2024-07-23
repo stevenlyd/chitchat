@@ -96,9 +96,15 @@ const chatModule = new Elysia()
               matchedSession.terminate();
               break;
             }
-            case ClientMessageType.HEARTBEAT: {
+            case ClientMessageType.HEARTBEAT_ONLINE: {
               matchedSession.heartbeat();
+              matchedSession.back()
               break;
+            }
+            case ClientMessageType.HEARTBEAT_AWAY: {
+              matchedSession.heartbeat()
+              matchedSession.away()
+              break
             }
           }
         }

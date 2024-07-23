@@ -13,5 +13,6 @@ export enum ClientMessageType {
   AWAY = "away",
   BACK = "back",
   LEAVE = "leave",
-  HEARTBEAT = "heartbeat",
+  HEARTBEAT_ONLINE = "heartbeat-online",
+  HEARTBEAT_AWAY = "heartbeat-away",
 }

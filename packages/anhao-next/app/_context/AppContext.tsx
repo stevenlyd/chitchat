@@ -310,7 +310,7 @@ export const AppContextProvider: FC<{ children: ReactNode }> = ({
     const heartBeatInterval = setInterval(() => {
       if (ws) {
         ws.send({
-          type: ClientMessageType.HEARTBEAT,
+          type: document.hasFocus() ? ClientMessageType.HEARTBEAT_ONLINE : ClientMessageType.HEARTBEAT_AWAY,
           message: "I'm alive",
           timestamp: new Date(),
         });
