@@ -1,12 +1,10 @@
 # See https://fly.io/docs/app-guides/continuous-deployment-with-github-actions/
 
 name: Deploy to Testing
-
 on:
   push:
     branches:
       - testing
-      
 jobs:
   deploy:
     name: Deploy to Testing
