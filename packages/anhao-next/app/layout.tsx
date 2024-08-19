@@ -2,11 +2,11 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 
-// export const metadata: Metadata = {
-//   title: "暗号",
-//   description: "一个简单的聊天室应用",
-//   manifest: "/manifest.json",
-// };
+export const metadata: Metadata = {
+  title: "暗号",
+  description: "A simple chat room",
+  manifest: "/manifest.json",
+};
 
 import { headers } from "next/headers";
 
