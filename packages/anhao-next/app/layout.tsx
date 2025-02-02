@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "暗号",
+  title: "Chitchat",
   description: "A simple chat room",
   manifest: "/manifest.json",
 };
