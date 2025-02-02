@@ -15,7 +15,7 @@ export default function NotificationButton(props: NotificationButtonProps) {
       onValueChange={setIsEnabled}
       className="flex-shrink-0"
     >
-      通知
+      Notification
     </Switch>
   );
 }

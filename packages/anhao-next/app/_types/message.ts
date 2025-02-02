@@ -8,4 +8,4 @@ export type Message = {
 
 export type WSMessage = Parameters<
   Parameters<ReturnType<typeof api.chat.subscribe>["subscribe"]>[0]
->[0]["data"][200];
+>[0]["data"];

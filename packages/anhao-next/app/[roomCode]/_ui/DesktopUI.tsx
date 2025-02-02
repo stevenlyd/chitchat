@@ -36,7 +36,7 @@ export default function DesktopUI(props: DesktopUIProps) {
     <div className="flex h-full w-full py-20 flex-row item-center justify-center gap-5">
       <title>{`${currentRoomCode}: ${username}`}</title>
       <ScrollShadow className="flex flex-col flex-shrink-0 h-full w-200 bg-gray-900 rounded-lg pt-4 px-3 items-center gap-2">
-        <p className="text-2xl font-bold mb-4 dark:text-white">在线用户</p>
+        <p className="text-2xl font-bold mb-4 dark:text-white">Online Users</p>
         {users.map(({ username, status }) => {
           return (
             <Chip
@@ -79,12 +79,12 @@ export default function DesktopUI(props: DesktopUIProps) {
             value={message}
             autoFocus
             style={{ width: "100%" }}
-            placeholder="请输入消息..."
+            placeholder="Let's chitchat!"
             onChange={handleMessageChange}
             ref={inputRef}
           />
           <Button disabled={!message} onPress={handleSendMessage}>
-            发送
+            Send
           </Button>
         </div>
       </div>
