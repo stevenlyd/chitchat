@@ -23,25 +23,25 @@ export default function DesktopLogin(props: DesktopLoginProps) {
   return (
     <div className="flex flex-col items-center justify-center h-full">
       <div className="flex flex-col gap-20">
-        <h1 className="text-4xl text-center">暗号</h1>
+        <h1 className="text-4xl text-center">Chitchat</h1>
         <div className="flex flex-row items-center gap-10 h-full">
           <Input
             autoFocus={shouldAutoFocusNameInput}
             value={roomCode ?? ""}
             className="w-100"
-            placeholder="输入你们的暗号..."
+            placeholder="Enter the room code..."
             onChange={handleRoomCodeChange}
           />
           <Input
             autoFocus={!shouldAutoFocusNameInput}
             value={username ?? ""}
             className="w-100"
-            placeholder="输入你的名字..."
+            placeholder="Enter your nickname..."
             onKeyDown={handleEnterKeyDown}
             onChange={handleUsernameChange}
           />
           <Button disabled={!(roomCode && username)} onPress={handleEnterRoom}>
-            进入房间
+            Enter the room
           </Button>
         </div>
       </div>

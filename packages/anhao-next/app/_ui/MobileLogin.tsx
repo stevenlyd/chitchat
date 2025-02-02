@@ -23,14 +23,14 @@ export default function MobileLogin(props: MobileLoginProps) {
   return (
     <div className="flex flex-col items-center justify-center h-full">
       <div className="flex flex-col gap-10">
-        <h1 className="text-4xl text-center">暗号</h1>
+        <h1 className="text-4xl text-center">Chithat</h1>
         <div className="flex flex-col items-center justify-center gap-10 h-full">
           <Input
             size="lg"
             autoFocus={shouldAutoFocusNameInput}
             value={roomCode ?? ""}
             className="w-100"
-            placeholder="输入你们的暗号..."
+            placeholder="Enter the room code..."
             onChange={handleRoomCodeChange}
           />
           <Input
@@ -38,7 +38,7 @@ export default function MobileLogin(props: MobileLoginProps) {
             autoFocus={!shouldAutoFocusNameInput}
             value={username ?? ""}
             className="w-100"
-            placeholder="输入你的名字..."
+            placeholder="Enter your nickname..."
             onKeyDown={handleEnterKeyDown}
             onChange={handleUsernameChange}
           />
@@ -47,7 +47,7 @@ export default function MobileLogin(props: MobileLoginProps) {
             disabled={!(roomCode && username)}
             onPress={handleEnterRoom}
           >
-            进入房间
+            Enter the room
           </Button>
         </div>
       </div>

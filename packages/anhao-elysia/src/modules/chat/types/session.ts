@@ -9,7 +9,7 @@ export enum SessionStatus {
 }
 
 export interface SessionConstructorParams {
-  ws: ElysiaWS<any, any, any>;
+  ws: ElysiaWS<any, any>;
   username: string;
   sessionManager: SessionManager;
   room: Room;

@@ -7,9 +7,6 @@
     "start-frontend": "cd packages/anhao-next && bun run start",
     "dev": "concurrently \"cd packages/anhao-next && bun run dev\" \"cd packages/anhao-elysia && bun run dev\""
   },
-  "devDependencies": {
-    "concurrently": "8.2.2"
-  },
   "workspaces": [
     "packages/*"
   ]
