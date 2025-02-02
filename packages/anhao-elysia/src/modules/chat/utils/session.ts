@@ -9,7 +9,7 @@ export class Session {
   private readonly $sessionManager: SessionManager;
   private readonly $hibernationTolerance = 1 * 60 * 1000;
   private readonly $room: Room;
-  private $ws: ElysiaWS<any, any, any> | null = null;
+  private $ws: ElysiaWS<any, any> | null = null;
   private $status: SessionStatus;
   private $timeoutId: Timer | null = null;
   private $lastActiveAt: Date | null = null;
@@ -43,7 +43,7 @@ export class Session {
     return this.$ws;
   }
 
-  set ws(ws: ElysiaWS<any, any, any> | null) {
+  set ws(ws: ElysiaWS<any, any> | null) {
     this.$ws = ws;
   }
 
@@ -150,7 +150,7 @@ export class Session {
     }, this.hibernationTolerance);
   };
 
-  reconnect = (ws: ElysiaWS<any, any, any>) => {
+  reconnect = (ws: ElysiaWS<any, any>) => {
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);
     }
@@ -210,7 +210,7 @@ export class Session {
       if (
         this.status === SessionStatus.HIBERNATING &&
         now.getSeconds() - this.lastActiveAt.getSeconds() >
-        this.hibernationTolerance + 5
+          this.hibernationTolerance + 5
       ) {
         this.terminate();
         resolve(false);

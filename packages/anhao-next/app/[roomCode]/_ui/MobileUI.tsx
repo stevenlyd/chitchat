@@ -29,7 +29,7 @@ export default function MobileUI(props: MobileUIProps) {
           panel: "flex flex-col w-full justify-between flex-grow overflow-auto",
         }}
       >
-        <Tab key="users" title="用户" className="flex-grow flex">
+        <Tab key="users" title="Users" className="flex-grow flex">
           <ScrollShadow className="flex flex-col flex-shrink-0 h-full w-200 bg-gray-900 rounded-lg pt-4 px-3 items-center gap-2">
             {users.map(({ username, status }) => {
               return (
@@ -47,7 +47,7 @@ export default function MobileUI(props: MobileUIProps) {
             })}
           </ScrollShadow>
         </Tab>
-        <Tab key="chat" title="消息">
+        <Tab key="chat" title="Messages">
           <div className="w-full items-center flex-grow-0">
             <p className="text-2xl w-full font-bold mb-4 text-center dark:text-white">
               {currentRoomCode}
@@ -70,12 +70,12 @@ export default function MobileUI(props: MobileUIProps) {
           <Input
             value={message}
             style={{ width: "100%" }}
-            placeholder="请输入消息..."
+            placeholder="Let's chitchat!"
             onChange={handleMessageChange}
             ref={inputRef}
           />
         </Tab>
-        <Tab key="settings" title="设置" className="flex-grow flex">
+        <Tab key="settings" title="Settings" className="flex-grow flex">
           {toggleNotificationButton}
         </Tab>
       </Tabs>
